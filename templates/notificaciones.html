@@ -1,65 +1,174 @@
 {% extends 'base.html' %}
-
-{% block title %}Notificaciones de Stock{% endblock %}
+{% block title %}Centro de Alertas{% endblock %}
 
 {% block content %}
-<h1 class="text-3xl font-semibold mb-6">Notificaciones de Stock</h1>
+<div class="min-h-screen bg-slate-50 px-6 py-8">
+  <div class="max-w-7xl mx-auto space-y-8">
 
-<div class="mb-6">
-  <div class="bg-[#FFFDF6] border border-[#E0DACC] p-5 rounded-xl shadow-sm hover:shadow-md transition">
-    <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
-      <i data-lucide="timer-off" class="w-5 h-5 text-yellow-600"></i>
-      Productos sin movimiento reciente
-    </h2>
-    <p class="text-sm text-[#6D6D6D] mt-1">
-      Consulta los productos que no han tenido salidas en los últimos <strong>30 días</strong>.
-    </p>
-    <a href="{{ url_for('productos_sin_movimiento') }}" class="inline-block mt-3 text-blue-600 hover:underline text-sm font-medium">
-      Ver productos sin movimiento →
-    </a>
+    <!-- ENCABEZADO -->
+    <div>
+      <h1 class="text-3xl font-black text-slate-900">Centro de Alertas</h1>
+      <p class="text-slate-500 mt-1">Monitoreo inteligente de materiales con bajo stock o exceso.</p>
+    </div>
+
+    {% set criticos = materiales|selectattr('estado','equalto','Crítico')|list|length %}
+    {% set regulares = materiales|selectattr('estado','equalto','Regular')|list|length %}
+    {% set excesos = materiales|selectattr('estado','equalto','Exceso')|list|length %}
+
+    <!-- TARJETAS RESUMEN -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="bg-red-50 border border-red-100 rounded-2xl p-5">
+        <p class="text-sm font-bold text-red-600">Críticos</p>
+        <h2 class="text-4xl font-black text-red-700">{{ criticos }}</h2>
+      </div>
+      <div class="bg-yellow-50 border border-yellow-100 rounded-2xl p-5">
+        <p class="text-sm font-bold text-yellow-600">Regulares</p>
+        <h2 class="text-4xl font-black text-yellow-700">{{ regulares }}</h2>
+      </div>
+      <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+        <p class="text-sm font-bold text-blue-600">Excesos</p>
+        <h2 class="text-4xl font-black text-blue-700">{{ excesos }}</h2>
+      </div>
+    </div>
+
+    <!-- BANNER URGENTE -->
+    <div class="rounded-3xl shadow-xl p-7 text-white
+      {% if criticos > 0 %}bg-gradient-to-r from-red-700 to-red-500
+      {% else %}bg-gradient-to-r from-emerald-800 to-emerald-600{% endif %}">
+      {% if criticos > 0 %}
+        <h2 class="text-2xl font-black mb-2">⚠️ Atención urgente</h2>
+        <p>Hay <strong>{{ criticos }}</strong> material{% if criticos != 1 %}es{% endif %} crítico{% if criticos != 1 %}s{% endif %}. Prioriza la reposición inmediata.</p>
+      {% else %}
+        <h2 class="text-2xl font-black mb-2">✅ Inventario bajo control</h2>
+        <p>No hay materiales críticos por el momento.</p>
+      {% endif %}
+    </div>
+
+    <!-- LISTA DE ALERTAS -->
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-7">
+      <h2 class="text-xl font-black text-slate-900 mb-5">Prioridad de reposición</h2>
+
+      {% if materiales %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for m in materiales %}
+
+        <div style="border-radius:16px; padding:20px; border:1px solid;
+          {% if m.estado == 'Crítico' %}background:#fff1f2; border-color:#fecaca;
+          {% elif m.estado == 'Regular' %}background:#fefce8; border-color:#fde68a;
+          {% else %}background:#eff6ff; border-color:#bfdbfe;{% endif %}">
+
+          <!-- CABECERA: nombre + badge -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
+            <div>
+              <h3 style="font-weight:900; color:#0f172a; font-size:16px; margin:0 0 2px;">
+                {{ m.nombre }}
+              </h3>
+              <p style="font-size:13px; color:#94a3b8; margin:0;">{{ m.categoria }}</p>
+            </div>
+
+            {% if m.estado == 'Crítico' %}
+              <span style="background:#dc2626; color:white; padding:4px 12px; border-radius:999px; font-size:11px; font-weight:900; white-space:nowrap;">
+                🔴 Crítico
+              </span>
+            {% elif m.estado == 'Regular' %}
+              <span style="background:#d97706; color:white; padding:4px 12px; border-radius:999px; font-size:11px; font-weight:900; white-space:nowrap;">
+                🟡 Regular
+              </span>
+            {% else %}
+              <span style="background:#2563eb; color:white; padding:4px 12px; border-radius:999px; font-size:11px; font-weight:900; white-space:nowrap;">
+                🔵 Exceso
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- MÉTRICAS -->
+          <div style="display:flex; gap:16px; margin-bottom:12px; flex-wrap:wrap;">
+            <div>
+              <p style="font-size:11px; color:#94a3b8; font-weight:700; margin:0;">STOCK ACTUAL</p>
+              <p style="font-size:22px; font-weight:900; color:
+                {% if m.estado == 'Crítico' %}#b91c1c
+                {% elif m.estado == 'Regular' %}#b45309
+                {% else %}#1d4ed8{% endif %}; margin:0;">
+                {{ m.stock_actual }}
+              </p>
+            </div>
+            <div style="width:1px; background:#e2e8f0;"></div>
+            <div>
+              <p style="font-size:11px; color:#94a3b8; font-weight:700; margin:0;">ÓPTIMO</p>
+              <p style="font-size:22px; font-weight:900; color:#0f172a; margin:0;">{{ m.stock_optimo }}</p>
+            </div>
+            <div style="width:1px; background:#e2e8f0;"></div>
+            <div>
+              <p style="font-size:11px; color:#94a3b8; font-weight:700; margin:0;">MÁXIMO</p>
+              <p style="font-size:22px; font-weight:900; color:#0f172a; margin:0;">{{ m.stock_maximo }}</p>
+            </div>
+          </div>
+
+          <!-- BARRA DE PROGRESO -->
+          {% if m.stock_optimo > 0 %}
+            {% set pct = [(m.stock_actual / m.stock_optimo * 100)|round(0)|int, 100]|min %}
+          {% else %}
+            {% set pct = 0 %}
+          {% endif %}
+          <div style="background:#e2e8f0; border-radius:999px; height:8px; margin-bottom:14px; overflow:hidden;">
+            <div style="height:100%; border-radius:999px; width:{{ pct }}%;
+              background:{% if m.estado == 'Crítico' %}#ef4444{% elif m.estado == 'Regular' %}#f59e0b{% else %}#3b82f6{% endif %};">
+            </div>
+          </div>
+
+          <!-- FECHA Y HORA DEL ÚLTIMO MOVIMIENTO -->
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:14px;
+                      background:rgba(0,0,0,0.04); border-radius:10px; padding:8px 12px;">
+            <span style="font-size:14px;">🕐</span>
+            <div>
+              <p style="font-size:11px; font-weight:700; color:#64748b; margin:0;">
+                Último movimiento registrado
+              </p>
+              {% if m.ultima_fecha %}
+                <p style="font-size:13px; font-weight:900; color:#0f172a; margin:0;">
+                  {{ m.ultima_fecha.strftime('%d/%m/%Y') }}
+                  <span style="color:#64748b; font-weight:600;">
+                    a las {{ m.ultima_fecha.strftime('%H:%M') }} hrs
+                  </span>
+                </p>
+              {% else %}
+                <p style="font-size:13px; font-weight:700; color:#94a3b8; margin:0;">
+                  Sin movimientos registrados
+                </p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- BOTÓN ACCIÓN -->
+          {% if m.estado == 'Crítico' or m.estado == 'Regular' %}
+            <a href="{{ url_for('registrar_entrada', id=m.id) }}"
+               style="display:inline-block; background:#047857; color:white;
+                      padding:10px 20px; border-radius:12px; font-weight:900;
+                      font-size:14px; text-decoration:none;">
+              📦 Reponer stock
+            </a>
+          {% else %}
+            <a href="{{ url_for('registrar_salida', id=m.id) }}"
+               style="display:inline-block; background:#1d4ed8; color:white;
+                      padding:10px 20px; border-radius:12px; font-weight:900;
+                      font-size:14px; text-decoration:none;">
+              📤 Revisar exceso
+            </a>
+          {% endif %}
+
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+        <div style="text-align:center; padding:60px 0;">
+          <p style="font-size:56px; margin-bottom:12px;">✅</p>
+          <h3 style="font-size:20px; font-weight:900; color:#0f172a; margin:0 0 8px;">Sin alertas activas</h3>
+          <p style="color:#94a3b8; margin:0;">No hay materiales con bajo stock o exceso en este momento.</p>
+        </div>
+      {% endif %}
+
+    </div>
   </div>
 </div>
-
-{% if notificaciones %}
-<table class="w-full text-center border-collapse bg-[#FFFDF6] shadow-md rounded-xl overflow-hidden border border-[#E0DACC]">
-    <thead class="bg-[#F2ECE5] text-center">
-        <tr>
-            <th class="px-4 py-3 border border-[#E0DACC]">Nombre</th>
-            <th class="px-4 py-3 border border-[#E0DACC]">Categoría</th>
-            <th class="px-4 py-3 border border-[#E0DACC]">Stock Actual</th>
-            <th class="px-4 py-3 border border-[#E0DACC]">Estado</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for noti in notificaciones %}
-        <tr class="hover:bg-[#FAF7F2] transition duration-150">
-            <td class="px-4 py-3 border border-[#E0DACC] text-center">{{ noti.nombre }}</td>
-            <td class="px-4 py-3 border border-[#E0DACC] text-center">{{ noti.categoria }}</td>
-            <td class="px-4 py-3 border border-[#E0DACC] text-center">{{ noti.stock }}</td>
-            <td class="px-4 py-3 border border-[#E0DACC] font-medium text-center">
-                {% if noti.estado == 'Crítico' %}
-                    <i data-lucide="alert-triangle" class="inline w-5 h-5 text-red-600 mr-1"></i>
-                    <span class="text-red-600">Crítico</span>
-                {% elif noti.estado == 'Regular' %}
-                    <i data-lucide="alert-circle" class="inline w-5 h-5 text-yellow-600 mr-1"></i>
-                    <span class="text-yellow-600">Regular</span>
-                {% elif noti.estado == 'Óptimo' %}
-                    <i data-lucide="check-circle" class="inline w-5 h-5 text-green-600 mr-1"></i>
-                    <span class="text-green-600">Óptimo</span>
-                {% elif noti.estado == 'Exceso' %}
-                    <i data-lucide="package-plus" class="inline w-5 h-5 text-cyan-600 mr-1"></i>
-                    <span class="text-cyan-600">Exceso</span>
-                {% else %}
-                    <i data-lucide="info" class="inline w-5 h-5 text-gray-500 mr-1"></i>
-                    <span class="text-gray-500">{{ noti.estado }}</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p class="text-[#6D6D6D] italic">No hay alertas de stock en este momento.</p>
-{% endif %}
 {% endblock %}
-<script>lucide.createIcons();</script>

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Panel Administrador{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-8">
+
+  <div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- HEADER -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">
+          Panel Ejecutivo
+        </h1>
+        <p class="text-slate-500 mt-1">
+          Resumen inteligente del inventario para tomar decisiones rápidas.
+        </p>
+      </div>
+
+      <div class="bg-white border border-slate-100 shadow-sm rounded-2xl px-5 py-4">
+        <p class="text-xs text-slate-500">Administrador activo</p>
+        <p class="font-black text-emerald-700">{{ current_user.nombres }} {{ current_user.apellidos }}</p>
+      </div>
+    </div>
+
+    <!-- MENSAJE EJECUTIVO -->
+    <div class="rounded-3xl p-8 shadow-xl text-white
+      {% if total_criticos > 0 %} bg-gradient-to-r from-red-700 to-red-500
+      {% else %} bg-gradient-to-r from-emerald-800 to-emerald-600 {% endif %}">
+
+      {% if total_criticos > 0 %}
+        <h2 class="text-2xl font-black mb-2">Atención requerida</h2>
+        <p class="text-red-50">
+          Hay <strong>{{ total_criticos }}</strong> materiales críticos. Prioriza la reposición para evitar interrupciones.
+        </p>
+      {% else %}
+        <h2 class="text-2xl font-black mb-2">Inventario estable</h2>
+        <p class="text-emerald-50">
+          No hay materiales críticos. El sistema se encuentra bajo control.
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+      <div class="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 hover:shadow-xl transition">
+        <p class="text-sm font-bold text-slate-500">Total materiales</p>
+        <h2 class="text-4xl font-black text-slate-900 mt-2">{{ total_materiales }}</h2>
+        <p class="text-xs text-slate-400 mt-2">Registrados</p>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 hover:shadow-xl transition">
+        <p class="text-sm font-bold text-slate-500">Críticos</p>
+        <h2 class="text-4xl font-black text-red-600 mt-2">{{ total_criticos }}</h2>
+        <p class="text-xs text-slate-400 mt-2">Requieren atención</p>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 hover:shadow-xl transition">
+        <p class="text-sm font-bold text-slate-500">No críticos</p>
+        <h2 class="text-4xl font-black text-emerald-600 mt-2">{{ total_materiales - total_criticos }}</h2>
+        <p class="text-xs text-slate-400 mt-2">En control</p>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 hover:shadow-xl transition">
+        <p class="text-sm font-bold text-slate-500">Salud inventario</p>
+
+        {% if total_materiales > 0 %}
+          {% set salud = ((total_materiales - total_criticos) / total_materiales * 100) | round(0) %}
+        {% else %}
+          {% set salud = 0 %}
+        {% endif %}
+
+        <h2 class="text-4xl font-black text-blue-600 mt-2">{{ salud }}%</h2>
+
+        <div class="w-full bg-slate-200 rounded-full h-3 mt-4">
+          <div class="bg-blue-600 h-3 rounded-full" style="width: {{ salud }}%"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CUERPO -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- GRÁFICO -->
+      <div class="lg:col-span-2 bg-white rounded-3xl shadow-xl border border-slate-100 p-7">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-xl font-black text-slate-900">Estado general del inventario</h2>
+            <p class="text-sm text-slate-500">Comparación entre materiales críticos y controlados.</p>
+          </div>
+        </div>
+
+        <div class="h-80">
+          <canvas id="graficoInventario"></canvas>
+        </div>
+      </div>
+
+      <!-- ACCIONES -->
+      <div class="bg-slate-900 text-white rounded-3xl shadow-xl p-7">
+
+        <h2 class="text-xl font-black mb-5">Acciones rápidas</h2>
+
+        <div class="space-y-4">
+          <a href="{{ url_for('agregar_material') }}"
+             class="block bg-emerald-600 rounded-2xl p-5 hover:bg-emerald-700 transition">
+            <p class="font-black">+ Agregar material</p>
+            <p class="text-sm text-emerald-100">Registrar nuevo stock.</p>
+          </a>
+
+          <a href="{{ url_for('notificaciones') }}"
+             class="block bg-red-600 rounded-2xl p-5 hover:bg-red-700 transition">
+            <p class="font-black">Ver alertas</p>
+            <p class="text-sm text-red-100">Revisar materiales críticos.</p>
+          </a>
+
+          <a href="{{ url_for('historial') }}"
+             class="block bg-blue-600 rounded-2xl p-5 hover:bg-blue-700 transition">
+            <p class="font-black">Historial</p>
+            <p class="text-sm text-blue-100">Entradas y salidas.</p>
+          </a>
+
+          <a href="{{ url_for('materiales') }}"
+             class="block bg-slate-700 rounded-2xl p-5 hover:bg-slate-800 transition">
+            <p class="font-black">Inventario completo</p>
+            <p class="text-sm text-slate-300">Ver todos los materiales.</p>
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- LISTA CRÍTICA -->
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-7">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-xl font-black text-slate-900">Prioridad de reposición</h2>
+          <p class="text-sm text-slate-500">Materiales que el administrador debe revisar primero.</p>
+        </div>
+      </div>
+
+      {% if materiales_criticos %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {% for m in materiales_criticos %}
+          <div class="flex items-center justify-between bg-red-50 border border-red-100 rounded-2xl p-5">
+            <div>
+              <p class="font-black text-slate-900">{{ m.nombre }}</p>
+              <p class="text-sm text-slate-500">
+                Stock actual: {{ m.stock_actual }} | Óptimo: {{ m.stock_optimo }}
+              </p>
+            </div>
+
+            <span class="bg-red-600 text-white px-4 py-2 rounded-full text-xs font-black">
+              Crítico
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-12">
+          <p class="text-5xl mb-3">✅</p>
+          <h3 class="text-xl font-black text-slate-800">Sin materiales críticos</h3>
+          <p class="text-slate-500">El inventario no requiere atención urgente.</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const ctx = document.getElementById('graficoInventario');
+
+new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Críticos', 'No críticos'],
+    datasets: [{
+      data: [
+        {{ total_criticos }},
+        {{ total_materiales - total_criticos }}
+      ],
+      backgroundColor: ['#dc2626', '#16a34a'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            weight: 'bold'
+          }
+        }
+      }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -7,11 +7,11 @@
   <!-- Tarjetas resumen -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="bg-white p-4 rounded-xl shadow-lg">
-      <h2 class="text-sm text-gray-500">Total de Productos</h2>
-      <p class="text-3xl font-bold text-gray-800">{{ total_productos }}</p>
+      <h2 class="text-sm text-gray-500">Total de Materiales</h2>
+      <p class="text-3xl font-bold text-gray-800">{{ total_materiales }}</p>
     </div>
     <div class="bg-red-100 p-4 rounded-xl shadow-lg">
-      <h2 class="text-sm text-red-600">Productos Críticos</h2>
+      <h2 class="text-sm text-red-600">Materiales Críticos</h2>
       <p class="text-3xl font-bold text-red-700">{{ total_criticos }}</p>
     </div>
   </div>
@@ -31,26 +31,26 @@
     </div>
   </div>
 
-  <!-- Tabla de productos más críticos -->
+  <!-- Tabla de Materiales más críticos -->
   <div class="bg-white p-6 rounded-xl shadow-lg">
     <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
       <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>
-      Top 5 Productos Más Críticos
+      Top 5 Materiales Más Críticos
     </h2>
     <table class="w-full text-sm text-left">
       <thead class="text-gray-600 border-b">
         <tr>
-          <th class="py-2">Producto</th>
+          <th class="py-2">Material</th>
           <th class="py-2">Stock Actual</th>
           <th class="py-2">Stock Óptimo</th>
         </tr>
       </thead>
       <tbody>
-        {% for producto in productos_criticos %}
+        {% for material in materiales_criticos %}
         <tr class="border-b hover:bg-red-50">
-          <td class="py-2">{{ producto.nombre }}</td>
-          <td class="py-2 text-red-600 font-semibold">{{ producto.stock_actual }}</td>
-          <td class="py-2">{{ producto.stock_optimo }}</td>
+          <td class="py-2">{{ material.nombre }}</td>
+          <td class="py-2 text-red-600 font-semibold">{{ material.stock_actual }}</td>
+          <td class="py-2">{{ material.stock_optimo }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -145,7 +145,7 @@
           beginAtZero: true,
           title: {
             display: true,
-            text: 'Cantidad de Productos'
+            text: 'Cantidad de Materiales'
           }
         }
       }

@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Editar Usuario{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-10">
+
+  <div class="max-w-5xl mx-auto">
+
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Editar Usuario</h1>
+        <p class="text-slate-500 mt-1">Actualiza datos, permisos y seguridad del usuario.</p>
+      </div>
+
+      <a href="{{ url_for('listar_usuarios') }}"
+         class="px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 shadow-sm">
+        Volver
+      </a>
+    </div>
+
+    <form method="POST" id="formEditarUsuario"
+          class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <div class="lg:col-span-2 bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-700 text-white flex items-center justify-center text-2xl font-black">
+            {{ usuario.nombres[0] }}
+          </div>
+
+          <div>
+            <h2 class="text-xl font-black text-slate-900">
+              {{ usuario.nombres }} {{ usuario.apellidos }}
+            </h2>
+            <p class="text-slate-500">@{{ usuario.username }}</p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-black text-slate-800 mb-5">Datos personales</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="text-sm font-bold text-slate-700">Nombres</label>
+            <input type="text" name="nombres" value="{{ usuario.nombres }}" required
+                   class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+
+          <div>
+            <label class="text-sm font-bold text-slate-700">Apellidos</label>
+            <input type="text" name="apellidos" value="{{ usuario.apellidos }}" required
+                   class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+
+          <div>
+            <label class="text-sm font-bold text-slate-700">Usuario</label>
+            <input type="text" name="username" value="{{ usuario.username }}" required
+                   class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+
+          <div>
+            <label class="text-sm font-bold text-slate-700">Estado</label>
+            <select name="estado"
+                    class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="activo" {% if usuario.estado == 'activo' %}selected{% endif %}>Activo</option>
+              <option value="inactivo" {% if usuario.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+            </select>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-black text-slate-800 mt-10 mb-5">Rol y permisos</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="text-sm font-bold text-slate-700">Rol</label>
+            <select name="rol" id="rol" onchange="togglePermiso()"
+                    class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="administrador" {% if usuario.rol == 'administrador' %}selected{% endif %}>Administrador</option>
+              <option value="usuario" {% if usuario.rol == 'usuario' %}selected{% endif %}>Usuario</option>
+            </select>
+          </div>
+
+          <div id="permisoBox">
+            <label class="text-sm font-bold text-slate-700">Permiso</label>
+            <select name="permiso" id="permiso"
+                    class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="editor" {% if usuario.permiso == 'editor' %}selected{% endif %}>Editor</option>
+              <option value="espectador" {% if usuario.permiso == 'espectador' %}selected{% endif %}>Solo consulta</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="bg-emerald-950 text-white rounded-3xl shadow-xl p-8 h-fit">
+
+        <div class="w-14 h-14 rounded-2xl bg-emerald-700 flex items-center justify-center text-2xl mb-5">
+          🔐
+        </div>
+
+        <h2 class="text-xl font-black mb-2">Confirmación segura</h2>
+        <p class="text-emerald-100 text-sm mb-6">
+          Para guardar los cambios, confirma tu contraseña de administrador.
+        </p>
+
+        <label class="text-sm font-bold text-emerald-100">Contraseña del administrador</label>
+        <input type="password" name="admin_password" required
+               class="mt-2 w-full px-4 py-3 rounded-xl text-slate-900 border-0 focus:ring-2 focus:ring-emerald-400 outline-none"
+               placeholder="Ingresa tu contraseña">
+
+        <div id="avisoCambios"
+             class="hidden mt-6 bg-yellow-100 text-yellow-800 rounded-xl px-4 py-3 text-sm font-bold">
+          Hay cambios pendientes por guardar.
+        </div>
+
+        <button type="submit" id="btnGuardar"
+                class="mt-6 w-full bg-white text-emerald-950 py-4 rounded-2xl font-black hover:bg-emerald-100 shadow-lg">
+          Guardar cambios
+        </button>
+
+        <a href="{{ url_for('listar_usuarios') }}"
+           class="block text-center mt-4 text-emerald-100 font-bold hover:text-white">
+          Cancelar edición
+        </a>
+
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+<script>
+function capitalizarTexto(input) {
+  let palabras = input.value.toLowerCase().split(" ");
+  let resultado = palabras.map(p =>
+    p.charAt(0).toUpperCase() + p.slice(1)
+  );
+  input.value = resultado.join(" ");
+}
+
+document.querySelector('input[name="nombres"]').addEventListener('input', function() {
+  capitalizarTexto(this);
+});
+
+document.querySelector('input[name="apellidos"]').addEventListener('input', function() {
+  capitalizarTexto(this);
+});
+
+function togglePermiso() {
+  const rol = document.getElementById('rol').value;
+  const permisoBox = document.getElementById('permisoBox');
+  const permiso = document.getElementById('permiso');
+
+  if (rol === 'administrador') {
+    permisoBox.style.display = 'none';
+    permiso.value = 'editor';
+  } else {
+    permisoBox.style.display = 'block';
+  }
+}
+
+togglePermiso();
+
+const campos = document.querySelectorAll('.campo');
+const avisoCambios = document.getElementById('avisoCambios');
+const btnGuardar = document.getElementById('btnGuardar');
+
+campos.forEach(campo => {
+  campo.addEventListener('input', () => {
+    avisoCambios.classList.remove('hidden');
+  });
+
+  campo.addEventListener('change', () => {
+    avisoCambios.classList.remove('hidden');
+  });
+});
+
+document.getElementById('formEditarUsuario').addEventListener('submit', function() {
+  btnGuardar.innerText = 'Guardando...';
+  btnGuardar.disabled = true;
+  btnGuardar.classList.add('opacity-70', 'cursor-not-allowed');
+});
+</script>
+{% endblock %}

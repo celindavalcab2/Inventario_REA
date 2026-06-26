@@ -1,95 +1,280 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Market Valenzuela{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+<meta charset="UTF-8">
+<title>{% block title %}Sistema REA{% endblock %}</title>
 
-    <style>
-        body {
-            font-family: 'Trebuchet MS', sans-serif;
-        }
-        :root {
-            --bg: #fdfcf9;
-            --primary: #2a6f75;   /* Azul mar mediterráneo */
-            --accent: #e07a5f;    /* Terracota */
-            --soft: #f4ede4;      /* Beige claro */
-            --shadow: rgba(0, 0, 0, 0.05);
-        }
-    </style>
-    <script src="//unpkg.com/alpinejs" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="//unpkg.com/alpinejs" defer></script>
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+}
+:root {
+    --bg: #eef4ef;
+    --sidebar: #0f3d2e;
+    --sidebar2: #17633f;
+    --active: #f3ead2;
+    --activeText: #123c30;
+    --muted: rgba(255,255,255,.14);
+}
+</style>
 </head>
 
-<body class="bg-[var(--bg)] text-gray-800 antialiased">
-    <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white shadow-md px-6 py-8 border-r border-[var(--soft)] flex flex-col gap-6">
-            <h1 class="text-2xl font-bold text-[var(--primary)] tracking-wide flex items-center gap-2">
-                <i data-lucide="store" class="text-[var(--accent)] w-6 h-6"></i> Market Valenzuela
-            </h1>
-            <nav class="flex flex-col gap-4 text-[17px]">
-                <a href="{{ url_for('inicio') }}"
-                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'inicio' %}text-[var(--accent)] font-semibold{% endif %}">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Inicio
-                </a>
-                <a href="{{ url_for('productos') }}"
-                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'productos' %}text-[var(--accent)] font-semibold{% endif %}">
-                    <i data-lucide="boxes" class="w-5 h-5"></i> Productos
-                </a>
-                <a href="{{ url_for('agregar_producto') }}"
-                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'agregar_producto' %}text-[var(--accent)] font-semibold{% endif %}">
-                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Agregar
-                </a>
-                <a href="{{ url_for('consultar_productos') }}"
-                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'consultar_productos' %}text-[var(--accent)] font-semibold{% endif %}">
-                    <i data-lucide="search" class="w-5 h-5"></i> Consultar
-                </a>
-                <a href="{{ url_for('notificaciones') }}"
-                   class="relative flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'notificaciones' %}text-[var(--accent)] font-semibold{% endif %}">
-                    <i data-lucide="bell" class="w-5 h-5"></i> Notificaciones
-                    {% if cantidad_no_leidas > 0 %}
-                    <span class="absolute -top-2 left-5 bg-[var(--accent)] text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
-                        {{ cantidad_no_leidas }}
-                    </span>
-                    {% endif %}
-                </a>
-                <a href="{{ url_for('historial') }}"
-                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'historial' %}text-[var(--accent)] font-semibold{% endif %}">
-                    <i data-lucide="clock" class="w-5 h-5"></i> Historial
-                </a>
-                <a href="{{ url_for('prediccion') }}"
-                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'prediccion' %}text-[var(--accent)] font-semibold{% endif %}">
-                    <i data-lucide="activity" class="w-5 h-5"></i> Predicciones
-                </a>
-                
-                <a href="{{ url_for('logout') }}"
-                   class="transition hover:text-[var(--accent)]">
-                   <i data-lucide="log-out" class="inline w-5 h-5 mr-1"></i> Cerrar Sesión
-                </a>
-            </nav>
-        </aside>
+<body class="bg-[var(--bg)] text-gray-800">
+<div class="flex min-h-screen">
 
-        <!-- Contenido principal -->
-        <main class="flex-1 p-10 bg-[var(--bg)]">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="mb-6 p-4 border-l-4 rounded-md shadow-sm
-                            {{ 'bg-green-50 border-green-400 text-green-900' if category == 'success' else 'bg-red-50 border-red-400 text-red-900' }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+<aside class="w-64 fixed h-full flex flex-col justify-between
+bg-gradient-to-b from-[var(--sidebar)] via-[#14532d] to-[var(--sidebar2)] text-white shadow-2xl">
 
-            {% block content %}{% endblock %}
-        </main>
+<div class="p-5">
+
+<div x-data="{ open:false }" class="relative mb-7">
+<button @click="open = !open"
+class="w-full flex items-center justify-between rounded-3xl px-4 py-4 bg-white/12 border border-white/10 shadow-lg hover:bg-white/18 transition">
+
+<div class="flex items-center gap-3">
+    {% if current_user.foto_perfil %}
+  <img src="{{ url_for('static', filename='img_perfiles/' ~ current_user.foto_perfil) }}"
+       class="w-10 h-10 rounded-full object-cover border-2 border-white/30">
+{% else %}
+  <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center
+              text-white font-bold text-sm">
+    {{ current_user.nombres[0]|upper }}
+  </div>
+{% endif %}
+
+    <div class="text-left">
+        <p class="font-semibold text-sm leading-tight">
+            {{ current_user.nombres }} {{ current_user.apellidos }}
+        </p>
+        <p class="text-xs text-green-100 capitalize">{{ current_user.rol }}</p>
     </div>
+</div>
 
-    <script>
-        lucide.createIcons();
-    </script>
+<i data-lucide="chevron-down" class="w-4 h-4 text-green-100"></i>
+</button>
+
+<div x-show="open" @click.away="open=false"
+class="absolute w-full bg-[#fdfcf8] text-gray-700 rounded-2xl mt-2 p-2 shadow-xl z-50">
+
+<!-- ✅ AHORA: apuntan a las rutas correctas -->
+<a href="{{ url_for('mi_perfil') }}" class="flex items-center gap-2 px-3 py-2 hover:bg-green-50 rounded-xl text-sm">
+<i data-lucide="user" class="w-4 h-4"></i> Mi perfil
+</a>
+
+<a href="{{ url_for('cambiar_contrasena') }}" class="flex items-center gap-2 px-3 py-2 hover:bg-green-50 rounded-xl text-sm">
+<i data-lucide="key-round" class="w-4 h-4"></i> Cambiar contraseña
+</a>
+
+<a href="{{ url_for('logout') }}" class="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-xl text-sm">
+<i data-lucide="log-out" class="w-4 h-4"></i> Cerrar sesión
+</a>
+
+</div>
+</div>
+
+<nav class="flex flex-col gap-3 text-sm font-medium">
+
+{% if current_user.is_authenticated and current_user.rol == 'administrador' %}
+<a href="{{ url_for('registrar_usuario') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint == 'registrar_usuario' %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint == 'registrar_usuario' %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="user-plus" class="w-5 h-5"></i>
+</span>
+Registrar Usuario
+</a>
+
+<a href="{{ url_for('listar_usuarios') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint in ['listar_usuarios','editar_usuario'] %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint in ['listar_usuarios','editar_usuario'] %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="users" class="w-5 h-5"></i>
+</span>
+Ver Usuarios
+</a>
+{% endif %}
+
+<a href="{{ url_for('inicio') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint in ['inicio','dashboard_admin','dashboard_usuario'] %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint in ['inicio','dashboard_admin','dashboard_usuario'] %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="home" class="w-5 h-5"></i>
+</span>
+Inicio
+</a>
+
+<a href="{{ url_for('materiales') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint == 'materiales' %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint == 'materiales' %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="boxes" class="w-5 h-5"></i>
+</span>
+Materiales
+</a>
+
+{% if current_user.rol == 'administrador' %}
+<a href="{{ url_for('agregar_material') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint == 'agregar_material' %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint == 'agregar_material' %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="plus-circle" class="w-5 h-5"></i>
+</span>
+Agregar
+</a>
+{% else %}
+<a href="#" onclick="mostrarMensaje()"
+class="flex items-center gap-3 px-3 py-3 rounded-2xl bg-white/8 text-green-100/70 cursor-not-allowed border border-white/10">
+<span class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+<i data-lucide="plus-circle" class="w-5 h-5"></i>
+</span>
+Agregar
+</a>
+{% endif %}
+
+<a href="{{ url_for('consultar_materiales') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint == 'consultar_materiales' %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint == 'consultar_materiales' %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="search" class="w-5 h-5"></i>
+</span>
+Consultar
+</a>
+
+<a href="{{ url_for('notificaciones') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200 relative
+{% if request.endpoint == 'notificaciones' %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint == 'notificaciones' %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="bell" class="w-5 h-5"></i>
+</span>
+Notificaciones
+{% if cantidad_no_leidas > 0 %}
+<span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+{{ cantidad_no_leidas }}
+</span>
+{% endif %}
+</a>
+
+<a href="{{ url_for('historial') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint == 'historial' %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint == 'historial' %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="clock" class="w-5 h-5"></i>
+</span>
+Historial
+</a>
+
+<a href="{{ url_for('prediccion') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+{% if request.endpoint == 'prediccion' %}
+bg-white/15 text-white backdrop-blur-md border border-white/20 shadow-xl
+{% else %}
+text-green-50 hover:bg-white/12 hover:translate-x-1
+{% endif %}">
+<span class="w-9 h-9 rounded-xl flex items-center justify-center
+{% if request.endpoint == 'prediccion' %}bg-[#123c30]/10{% else %}bg-white/10{% endif %}">
+<i data-lucide="activity" class="w-5 h-5"></i>
+</span>
+Predicciones
+</a>
+
+<a href="{{ url_for('logout') }}"
+class="group flex items-center gap-3 px-3 py-3 rounded-2xl text-red-200 hover:bg-red-500/20 transition-all duration-200 hover:translate-x-1">
+<span class="w-9 h-9 rounded-xl bg-red-400/10 flex items-center justify-center">
+<i data-lucide="log-out" class="w-5 h-5"></i>
+</span>
+Cerrar Sesión
+</a>
+
+</nav>
+</div>
+
+<div class="p-5 text-center">
+<p class="text-green-100/70 text-xs mb-3">© 2026 REA S.A.C</p>
+
+<a href="https://www.facebook.com"
+class="bg-white/10 text-white border border-white/20 px-4 py-2 rounded-xl backdrop-blur-sm hover:bg-white/20 transition">
+Facebook
+</a>
+</div>
+
+</aside>
+
+<main class="ml-64 flex-1 p-10 bg-[#f4f7f4] min-h-screen">
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="mb-4 p-4 rounded-xl shadow
+{{ 'bg-green-100 text-green-800' if category=='success' else 'bg-red-100 text-red-800' }}">
+{{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+</main>
+
+</div>
+
+<script>
+function mostrarMensaje(){
+const msg=document.createElement("div");
+msg.innerText="Debes comunicarte con el administrador";
+msg.className="fixed top-5 right-5 bg-[#123c30] text-white px-4 py-2 rounded-xl shadow z-50";
+document.body.appendChild(msg);
+setTimeout(()=>msg.remove(),3000);
+}
+</script>
+
+<script>
+lucide.createIcons();
+</script>
+
 </body>
 </html>

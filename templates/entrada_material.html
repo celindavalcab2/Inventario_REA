@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Entrada{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-10">
+  <div class="max-w-5xl mx-auto">
+
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Registrar Entrada</h1>
+        <p class="text-slate-500 mt-1">Aumenta el stock del material seleccionado.</p>
+      </div>
+      <a href="{{ url_for('materiales') }}"
+         class="px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 shadow-sm">
+        Volver
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- COLUMNA PRINCIPAL -->
+      <div class="lg:col-span-2 bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-black">
+            {{ material.nombre[0] }}
+          </div>
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">{{ material.nombre }}</h2>
+            <p class="text-slate-500">{{ material.categoria }}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+            <p class="text-sm text-slate-500 font-bold">Stock actual</p>
+            <h3 class="text-3xl font-black text-slate-900">{{ material.stock_actual }}</h3>
+          </div>
+          <div class="bg-blue-50 rounded-2xl p-5 border border-blue-100">
+            <p class="text-sm text-blue-600 font-bold">Stock óptimo</p>
+            <h3 class="text-3xl font-black text-blue-700">{{ material.stock_optimo }}</h3>
+          </div>
+          <div class="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
+            <p class="text-sm text-emerald-600 font-bold">Stock máximo</p>
+            <h3 class="text-3xl font-black text-emerald-700">{{ material.stock_maximo }}</h3>
+          </div>
+        </div>
+
+        <!-- FORMULARIO -->
+        <form method="POST" id="formEntrada">
+          <!-- campo contraseña oculto, se llena desde el modal -->
+          <input type="hidden" name="admin_password" id="campoPassword">
+
+          <label class="text-sm font-bold text-slate-700">Cantidad a ingresar</label>
+          <input type="number"
+                 name="cantidad"
+                 id="cantidad"
+                 min="1"
+                 max="{{ material.stock_maximo - material.stock_actual }}"
+                 required
+                 class="mt-2 w-full px-4 py-4 rounded-xl border border-slate-300 text-lg font-bold outline-none focus:ring-2 focus:ring-emerald-700"
+                 placeholder="Ej. 10">
+
+          <p class="text-sm text-slate-500 mt-2">
+            Puedes ingresar como máximo
+            <strong>{{ material.stock_maximo - material.stock_actual }}</strong> unidades.
+          </p>
+
+          <!-- Preview nuevo stock -->
+          <div id="preview" class="hidden mt-6 bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
+            <p class="text-sm text-emerald-700 font-bold">Nuevo stock estimado</p>
+            <h3 class="text-3xl font-black" id="nuevoStock"></h3>
+          </div>
+
+          <div class="flex flex-col md:flex-row gap-4 mt-8">
+            <button type="submit"
+                    id="btnGuardar"
+                    class="flex-1 bg-emerald-700 text-white py-4 rounded-2xl font-black hover:bg-emerald-800 shadow-lg">
+              Guardar entrada
+            </button>
+            <a href="{{ url_for('materiales') }}"
+               class="flex-1 text-center bg-slate-200 text-slate-700 py-4 rounded-2xl font-black hover:bg-slate-300">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+
+      <!-- COLUMNA LATERAL -->
+      <div class="bg-slate-900 text-white rounded-3xl shadow-xl p-8 h-fit">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center text-2xl mb-5">
+          📦
+        </div>
+        <h2 class="text-xl font-black mb-2">Control de entrada</h2>
+        <p class="text-slate-300 text-sm mb-6">
+          Esta operación aumentará el stock y quedará registrada en el historial del sistema.
+        </p>
+        <div class="space-y-4 text-sm">
+          <div class="bg-slate-800 rounded-2xl p-4">
+            <p class="text-slate-400">Estado recomendado</p>
+            <p class="font-black text-emerald-400">No superar el stock máximo</p>
+          </div>
+          <div class="bg-slate-800 rounded-2xl p-4">
+            <p class="text-slate-400">Movimiento</p>
+            <p class="font-black text-white">Entrada de inventario</p>
+          </div>
+          <div class="bg-slate-800 rounded-2xl p-4">
+            <p class="text-slate-400">Seguridad</p>
+            <p class="font-black text-yellow-400">Requiere contraseña para confirmar</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== MODAL CONTRASEÑA ===================== -->
+<div id="modalPassword"
+     style="display:none; position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+
+  <div style="background:white; border-radius:24px; padding:32px;
+              max-width:440px; width:calc(100% - 32px);
+              box-shadow:0 25px 60px rgba(0,0,0,0.3);">
+
+    <div style="width:64px; height:64px; background:#d1fae5; border-radius:16px;
+                display:flex; align-items:center; justify-content:center;
+                font-size:32px; margin:0 auto 20px;">
+      📦
+    </div>
+
+    <h2 style="font-size:20px; font-weight:900; color:#0f172a; text-align:center; margin:0 0 8px;">
+      Confirmar entrada de stock
+    </h2>
+
+    <p style="color:#64748b; text-align:center; font-size:14px; margin:0 0 6px; line-height:1.6;">
+      Vas a ingresar <strong id="resumenCantidad" style="color:#0f172a;"></strong> unidades a
+      <strong style="color:#0f172a;">{{ material.nombre }}</strong>.
+    </p>
+    <p style="color:#64748b; text-align:center; font-size:14px; margin:0 0 24px;">
+      Nuevo stock estimado: <strong id="resumenNuevoStock" style="color:#059669;"></strong>
+    </p>
+
+    <label style="font-size:13px; font-weight:700; color:#374151; display:block; margin-bottom:8px;">
+      Ingresa tu contraseña para autorizar
+    </label>
+
+    <div style="position:relative; margin-bottom:6px;">
+      <input type="password"
+             id="inputPasswordModal"
+             placeholder="••••••••"
+             style="width:100%; padding:12px 48px 12px 16px; border:2px solid #e2e8f0;
+                    border-radius:12px; font-size:15px; font-weight:700;
+                    outline:none; box-sizing:border-box;">
+      <button type="button"
+              id="toggleVerPassword"
+              style="position:absolute; right:14px; top:50%; transform:translateY(-50%);
+                     background:none; border:none; cursor:pointer; font-size:18px;">
+        👁️
+      </button>
+    </div>
+
+    <p id="errorPasswordModal"
+       style="display:none; color:#dc2626; font-size:12px; font-weight:700; margin-bottom:8px;">
+      ⚠️ Debes ingresar tu contraseña para continuar.
+    </p>
+
+    <div style="display:flex; gap:12px; margin-top:20px;">
+      <button type="button"
+              id="btnCancelarModal"
+              style="flex:1; padding:14px; border-radius:12px; border:2px solid #e2e8f0;
+                     background:white; color:#374151; font-weight:700; font-size:15px; cursor:pointer;">
+        Cancelar
+      </button>
+      <button type="button"
+              id="btnConfirmarModal"
+              style="flex:1; padding:14px; border-radius:12px; border:none;
+                     background:#059669; color:white; font-weight:900;
+                     font-size:15px; cursor:pointer;">
+        Confirmar entrada
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===================== SCRIPTS ===================== -->
+<script>
+var stockActual = Number("{{ material.stock_actual }}");
+var stockMaximo = Number("{{ material.stock_maximo }}");
+var confirmarEnvio = false;
+
+var inputCantidad   = document.getElementById('cantidad');
+var preview         = document.getElementById('preview');
+var nuevoStockEl    = document.getElementById('nuevoStock');
+var btnGuardar      = document.getElementById('btnGuardar');
+var modalPassword   = document.getElementById('modalPassword');
+var inputPwd        = document.getElementById('inputPasswordModal');
+var errorPwd        = document.getElementById('errorPasswordModal');
+
+/* ── Preview cantidad ── */
+inputCantidad.addEventListener('input', function() {
+  var valor     = Number(this.value);
+  var resultado = stockActual + valor;
+
+  if (valor > 0) {
+    preview.classList.remove('hidden');
+    nuevoStockEl.textContent = resultado + ' unidades';
+
+    if (resultado > stockMaximo) {
+      nuevoStockEl.style.color = '#dc2626';
+      btnGuardar.disabled = true;
+      btnGuardar.classList.add('opacity-60', 'cursor-not-allowed');
+    } else {
+      nuevoStockEl.style.color = '#065f46';
+      btnGuardar.disabled = false;
+      btnGuardar.classList.remove('opacity-60', 'cursor-not-allowed');
+    }
+  } else {
+    preview.classList.add('hidden');
+  }
+});
+
+/* ── Interceptar envío → abrir modal ── */
+document.getElementById('formEntrada').addEventListener('submit', function(e) {
+  if (!confirmarEnvio) {
+    e.preventDefault();
+    var valor = Number(inputCantidad.value);
+    if (!valor || valor <= 0) return;
+
+    document.getElementById('resumenCantidad').textContent   = valor;
+    document.getElementById('resumenNuevoStock').textContent = (stockActual + valor) + ' unidades';
+
+    inputPwd.value = '';
+    errorPwd.style.display = 'none';
+    modalPassword.style.display = 'flex';
+    setTimeout(function() { inputPwd.focus(); }, 50);
+  }
+});
+
+/* ── Cancelar modal ── */
+document.getElementById('btnCancelarModal').addEventListener('click', function() {
+  modalPassword.style.display = 'none';
+});
+
+/* ── Confirmar desde modal ── */
+document.getElementById('btnConfirmarModal').addEventListener('click', function() {
+  var pwd = inputPwd.value.trim();
+  if (!pwd) {
+    errorPwd.style.display = 'block';
+    inputPwd.focus();
+    return;
+  }
+  document.getElementById('campoPassword').value = pwd;
+  confirmarEnvio = true;
+  btnGuardar.textContent = 'Guardando...';
+  btnGuardar.disabled = true;
+  document.getElementById('formEntrada').submit();
+});
+
+/* ── Toggle ver/ocultar contraseña ── */
+document.getElementById('toggleVerPassword').addEventListener('click', function() {
+  if (inputPwd.type === 'password') {
+    inputPwd.type = 'text';
+    this.textContent = '🙈';
+  } else {
+    inputPwd.type = 'password';
+    this.textContent = '👁️';
+  }
+});
+
+/* ── Cerrar modal al hacer clic fuera ── */
+modalPassword.addEventListener('click', function(e) {
+  if (e.target === this) modalPassword.style.display = 'none';
+});
+
+/* ── Cerrar con ESC ── */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') modalPassword.style.display = 'none';
+});
+
+/* ── Enter en contraseña confirma ── */
+inputPwd.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('btnConfirmarModal').click();
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% block title %}Materiales{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-8">
+
+  <div class="max-w-7xl mx-auto">
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Inventario de Materiales</h1>
+        <p class="text-slate-500 mt-1">Control general de stock, estado y movimientos.</p>
+      </div>
+      <div class="flex gap-3">
+        <a href="{{ url_for('agregar_material') }}"
+           class="bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold hover:bg-emerald-800 shadow">
+          + Nuevo Material
+        </a>
+        <a href="{{ url_for('exportar_materiales_pdf') }}"
+           class="bg-red-600 text-white px-5 py-3 rounded-xl font-bold hover:bg-red-700 shadow">
+          Exportar PDF
+        </a>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+      <div class="bg-white rounded-2xl shadow p-5">
+        <p class="text-sm text-slate-500 font-bold">Total materiales</p>
+        <h2 class="text-3xl font-black">{{ materiales|length }}</h2>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-5">
+        <p class="text-sm text-slate-500 font-bold">Críticos</p>
+        <h2 class="text-3xl font-black text-red-600">
+          {{ materiales|selectattr('estado','equalto','Crítico')|list|length }}
+        </h2>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-5">
+        <p class="text-sm text-slate-500 font-bold">Óptimos</p>
+        <h2 class="text-3xl font-black text-emerald-600">
+          {{ materiales|selectattr('estado','equalto','Óptimo')|list|length }}
+        </h2>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+
+      <div class="p-5 border-b">
+        <input type="text" id="buscarMaterial"
+               placeholder="Buscar material..."
+               class="w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-emerald-700 outline-none">
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
+            <tr>
+              <th class="px-5 py-4 text-left">Material</th>
+              <th class="px-5 py-4 text-left">Categoría</th>
+              <th class="px-5 py-4 text-center">Stock</th>
+              <th class="px-5 py-4 text-center">Óptimo</th>
+              <th class="px-5 py-4 text-center">Máximo</th>
+              <th class="px-5 py-4 text-center">Estado</th>
+              <th class="px-5 py-4 text-center">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for m in materiales %}
+            <tr class="fila-material hover:bg-slate-50 border-b border-slate-100"
+                data-texto="{{ m.nombre }} {{ m.categoria }} {{ m.estado }}">
+
+              <td class="px-5 py-4">
+                <button type="button"
+                        class="btn-ver-foto font-black text-slate-900 hover:text-emerald-700 hover:underline text-left"
+                        data-nombre="{{ m.nombre | e }}"
+                        data-foto="{{ url_for('static', filename='img_materiales/' ~ m.foto) if m.foto else '' }}">
+                  {{ m.nombre }}
+                </button>
+                <p class="text-xs text-slate-400">Ver imagen</p>
+              </td>
+
+              <td class="px-5 py-4 text-slate-600">{{ m.categoria }}</td>
+
+              <td class="px-5 py-4 text-center font-black text-slate-900">
+                {{ m.stock_actual }}
+              </td>
+
+              <td class="px-5 py-4 text-center text-slate-600">
+                {{ m.stock_optimo }}
+              </td>
+
+              <td class="px-5 py-4 text-center text-slate-600">
+                {{ m.stock_maximo }}
+              </td>
+
+              <td class="px-5 py-4 text-center">
+                {% if m.estado == 'Crítico' %}
+                  <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">Crítico</span>
+                {% elif m.estado == 'Óptimo' %}
+                  <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Óptimo</span>
+                {% elif m.estado == 'Exceso' %}
+                  <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">Exceso</span>
+                {% else %}
+                  <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">Regular</span>
+                {% endif %}
+              </td>
+
+             <td class="px-5 py-4 text-center">
+
+    <div class="flex flex-wrap justify-center gap-2">
+
+        <a href="{{ url_for('registrar_entrada', id=m.id) }}"
+           class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow">
+            ➕ Entrada
+        </a>
+
+        <a href="{{ url_for('registrar_salida', id=m.id) }}"
+           class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg text-xs font-bold shadow">
+            ➖ Salida
+        </a>
+
+        <a href="{{ url_for('editar', id=m.id) }}"
+           class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow">
+            ✏️ Editar
+        </a>
+
+        <button type="button"
+                class="btn-eliminar bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-xs font-bold shadow"
+                data-id="{{ m.id }}"
+                data-nombre="{{ m.nombre | e }}">
+            🗑️ Eliminar
+        </button>
+
+    </div>
+
+</td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <p id="sinResultados" class="hidden text-center py-8 text-slate-500 font-bold">
+        No se encontraron materiales.
+      </p>
+
+    </div>
+  </div>
+</div>
+
+
+<div id="modalFotoMaterial"
+     style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.9);">
+  <div style="width:100%; height:100%; display:flex; flex-direction:column;
+              align-items:center; justify-content:center; position:relative;">
+
+    <button onclick="cerrarFotoMaterial()"
+            style="position:absolute; top:24px; right:24px; width:48px; height:48px;
+                   border-radius:50%; background:rgba(255,255,255,0.1); border:none;
+                   color:white; font-size:24px; font-weight:900; cursor:pointer;">
+      ×
+    </button>
+
+    <h2 id="tituloFotoMaterial"
+        style="color:white; font-size:32px; font-weight:900; margin-bottom:32px;
+               text-align:center; padding:0 20px;">
+    </h2>
+
+    <img id="imagenMaterial" src=""
+         style="max-width:90vw; max-height:78vh; object-fit:contain;
+                border-radius:16px; display:none;">
+
+    <div id="sinFotoMaterial"
+         style="display:none; color:white; font-size:22px; font-weight:700; text-align:center;">
+      Este material no tiene imagen.
+    </div>
+
+  </div>
+</div>
+
+
+<div id="modalEliminar"
+     style="display:none; position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+
+  <div style="background:white; border-radius:24px; padding:32px;
+              max-width:440px; width:calc(100% - 32px);
+              box-shadow:0 25px 60px rgba(0,0,0,0.3);">
+
+    <div style="width:72px; height:72px; background:#fee2e2; border-radius:16px;
+                display:flex; align-items:center; justify-content:center;
+                font-size:36px; margin:0 auto 20px;">
+      🗑️
+    </div>
+
+    <h2 style="font-size:22px; font-weight:900; color:#0f172a;
+               text-align:center; margin:0 0 8px;">
+      ¿Eliminar material?
+    </h2>
+
+    <p style="color:#64748b; text-align:center; font-size:14px;
+              margin:0 0 24px; line-height:1.6;">
+      Estás a punto de eliminar
+      <strong id="modalNombreMaterial" style="color:#0f172a;"></strong>.
+      <br>Esta acción
+      <span style="color:#dc2626; font-weight:700;">no se puede deshacer</span>.
+    </p>
+
+    <form id="formEliminar" method="POST" action="">
+
+      <label style="font-size:13px; font-weight:700; color:#374151;
+                    display:block; margin-bottom:8px;">
+        Confirma tu contraseña para continuar
+      </label>
+
+      <input type="password"
+             name="admin_password"
+             id="modalPassword"
+             placeholder="••••••••"
+             style="width:100%; padding:12px 16px; border:2px solid #e2e8f0;
+                    border-radius:12px; font-size:15px; font-weight:700;
+                    outline:none; box-sizing:border-box; margin-bottom:6px;">
+
+      <p id="modalErrorPwd"
+         style="display:none; color:#dc2626; font-size:12px;
+                font-weight:700; margin-bottom:8px;">
+        Debes ingresar tu contraseña para confirmar.
+      </p>
+
+      <div style="display:flex; gap:12px; margin-top:20px;">
+        <button type="button"
+                onclick="cerrarModalEliminar()"
+                style="flex:1; padding:14px; border-radius:12px;
+                       border:2px solid #e2e8f0; background:white;
+                       color:#374151; font-weight:700; font-size:15px; cursor:pointer;">
+          Cancelar
+        </button>
+        <button type="submit"
+                id="btnConfirmarEliminar"
+                style="flex:1; padding:14px; border-radius:12px; border:none;
+                       background:#dc2626; color:white; font-weight:900;
+                       font-size:15px; cursor:pointer;">
+          Sí, eliminar
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+
+<script>
+
+document.getElementById('buscarMaterial').addEventListener('input', function () {
+  var texto = this.value.toLowerCase().trim();
+  var filas = document.querySelectorAll('.fila-material');
+  var encontrados = 0;
+  filas.forEach(function(fila) {
+    var data = fila.getAttribute('data-texto').toLowerCase();
+    if (data.indexOf(texto) !== -1) {
+      fila.style.display = '';
+      encontrados++;
+    } else {
+      fila.style.display = 'none';
+    }
+  });
+  document.getElementById('sinResultados').style.display = encontrados === 0 ? 'block' : 'none';
+});
+
+document.querySelectorAll('.btn-ver-foto').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var nombre  = this.getAttribute('data-nombre');
+    var fotoUrl = this.getAttribute('data-foto');
+    document.getElementById('tituloFotoMaterial').textContent = nombre;
+    var imagen  = document.getElementById('imagenMaterial');
+    var sinFoto = document.getElementById('sinFotoMaterial');
+    if (fotoUrl) {
+      imagen.src = fotoUrl;
+      imagen.style.display = 'block';
+      sinFoto.style.display = 'none';
+    } else {
+      imagen.style.display = 'none';
+      sinFoto.style.display = 'block';
+    }
+    document.getElementById('modalFotoMaterial').style.display = 'block';
+  });
+});
+
+function cerrarFotoMaterial() {
+  document.getElementById('modalFotoMaterial').style.display = 'none';
+}
+
+document.getElementById('modalFotoMaterial').addEventListener('click', function(e) {
+  if (e.target === this) cerrarFotoMaterial();
+});
+
+document.querySelectorAll('.btn-eliminar').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id     = this.getAttribute('data-id');
+    var nombre = this.getAttribute('data-nombre');
+    document.getElementById('modalNombreMaterial').textContent = nombre;
+    document.getElementById('formEliminar').action = '/eliminar/' + id;
+    document.getElementById('modalPassword').value = '';
+    document.getElementById('modalErrorPwd').style.display = 'none';
+    document.getElementById('btnConfirmarEliminar').textContent = 'Sí, eliminar';
+    document.getElementById('btnConfirmarEliminar').disabled = false;
+    document.getElementById('modalEliminar').style.display = 'flex';
+    document.getElementById('modalPassword').focus();
+  });
+});
+
+function cerrarModalEliminar() {
+  document.getElementById('modalEliminar').style.display = 'none';
+}
+
+document.getElementById('formEliminar').addEventListener('submit', function(e) {
+  var pwd = document.getElementById('modalPassword').value.trim();
+  if (!pwd) {
+    e.preventDefault();
+    document.getElementById('modalErrorPwd').style.display = 'block';
+    document.getElementById('modalPassword').focus();
+    return;
+  }
+  var btn = document.getElementById('btnConfirmarEliminar');
+  btn.textContent = 'Eliminando...';
+  btn.disabled = true;
+});
+
+document.getElementById('modalEliminar').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalEliminar();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    cerrarModalEliminar();
+    cerrarFotoMaterial();
+  }
+});
+
+</script>
+
+{% endblock %}

@@ -1,84 +1,399 @@
 {% extends 'base.html' %}
-
-{% block title %}Historial de Movimientos{% endblock %}
+{% block title %}Historial{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto bg-white shadow-md rounded-xl p-8">
-    <h2 class="text-2xl font-semibold text-[var(--primary)] mb-6">Historial de Movimientos</h2>
+<style>
+  .filtro-input {
+    width:100%;
+    padding:10px 14px;
+    border:1.5px solid #e2e8f0;
+    border-radius:10px;
+    font-size:14px;
+    outline:none;
+    background:white;
+    box-sizing:border-box;
+  }
+  .filtro-input:focus { border-color:#10b981; }
 
-    <!-- Formulario de filtros -->
-    <form method="GET" class="flex flex-wrap items-end gap-4 mb-6">
-        <div class="flex flex-col">
-            <label for="tipo" class="text-sm font-medium text-gray-700">Tipo de Movimiento</label>
-            <select name="tipo" id="tipo" class="border border-gray-300 rounded px-3 py-2 text-sm">
-                <option value="">Todos</option>
-                <option value="entrada" {% if request.args.get('tipo') == 'entrada' %}selected{% endif %}>Entrada</option>
-                <option value="salida" {% if request.args.get('tipo') == 'salida' %}selected{% endif %}>Salida</option>
-                <option value="eliminación" {% if request.args.get('tipo') == 'eliminación' %}selected{% endif %}>Eliminación</option>
-            </select>
-        </div>
+  #buscador {
+    width:100%;
+    padding:12px 18px 12px 44px;
+    border:1.5px solid #e2e8f0;
+    border-radius:12px;
+    font-size:14px;
+    outline:none;
+    box-sizing:border-box;
+  }
+  #buscador:focus { border-color:#10b981; }
 
-        <div class="flex flex-col">
-            <label for="desde" class="text-sm font-medium text-gray-700">Desde</label>
-            <input type="date" name="desde" id="desde" value="{{ request.args.get('desde', '') }}"
-                   class="border border-gray-300 rounded px-3 py-2 text-sm">
-        </div>
+  .fila-tabla:hover { background:#f8fafc; }
 
-        <div class="flex flex-col">
-            <label for="hasta" class="text-sm font-medium text-gray-700">Hasta</label>
-            <input type="date" name="hasta" id="hasta" value="{{ request.args.get('hasta', '') }}"
-                   class="border border-gray-300 rounded px-3 py-2 text-sm">
-        </div>
+  .opcion-usuario {
+    padding:10px 14px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:600;
+    color:#374151;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border-bottom:1px solid #f8fafc;
+  }
+  .opcion-usuario:hover { background:#f0fdf4; }
+  .opcion-usuario:last-child { border-bottom:none; }
+</style>
 
-        <button type="submit"
-                class="bg-[var(--primary)] hover:bg-[var(--accent)] text-white px-5 py-2 rounded shadow text-sm font-semibold transition">
-            Filtrar
-        </button>
+<div class="min-h-screen bg-slate-50 px-6 py-8">
+<div class="max-w-7xl mx-auto space-y-7">
 
-        <a href="{{ url_for('historial') }}"
-           class="text-sm text-gray-600 underline mt-2">Limpiar filtros</a>
-    </form>
+  <!-- ENCABEZADO -->
+  <div>
+    <h1 class="text-3xl font-black text-slate-900">Auditoría de Movimientos</h1>
+    <p class="text-slate-500 mt-1">Control total de entradas, salidas y operaciones del sistema.</p>
+  </div>
 
-    <!-- Tabla de resultados -->
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white border border-[var(--soft)] rounded overflow-hidden shadow text-sm">
-            <thead class="bg-[var(--primary)] text-white text-left">
-                <tr class="text-center">
-                    <th class="px-4 py-3">ID</th>
-                    <th class="px-4 py-3">Producto</th>
-                    <th class="px-4 py-3">Tipo de Movimiento</th>
-                    <th class="px-4 py-3">Cantidad</th>
-                    <th class="px-4 py-3">Fecha y Hora</th>
-                    <th class="px-4 py-3">Usuario</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--soft)] text-center text-gray-700">
-                {% for movimiento in movimientos %}
-                <tr class="hover:bg-[var(--soft)] transition">
-                    <td class="px-4 py-2">{{ movimiento.id }}</td>
-                    <td class="px-4 py-2">{{ movimiento.nombre_producto }}</td>
-                    <td class="px-4 py-2 capitalize font-semibold
-                        {% if movimiento.tipo_movimiento == 'entrada' %}
-                            text-green-600
-                        {% elif movimiento.tipo_movimiento == 'salida' %}
-                            text-yellow-600
-                        {% elif movimiento.tipo_movimiento == 'eliminación' %}
-                            text-red-600
-                        {% endif %}
-                    ">
-                        {{ movimiento.tipo_movimiento }}
-                    </td>
-                    <td class="px-4 py-2">{{ movimiento.cantidad }}</td>
-                    <td class="px-4 py-2">{{ movimiento.fecha_hora_local.strftime('%d-%m-%Y %H:%M:%S') }}</td>
-                    <td class="px-4 py-2">{{ movimiento.usuario or 'N/A' }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="px-4 py-4 text-center text-gray-500">No hay movimientos registrados.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <!-- TARJETAS RESUMEN -->
+  {% set total_e  = movimientos|selectattr('tipo_movimiento','equalto','entrada')|list|length %}
+  {% set total_s  = movimientos|selectattr('tipo_movimiento','equalto','salida')|list|length %}
+  {% set total_el = movimientos|selectattr('tipo_movimiento','equalto','eliminacion')|list|length %}
+  {% set total    = movimientos|length %}
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+    <div style="background:white;border-radius:16px;border:1px solid #e2e8f0;padding:20px;">
+      <p style="font-size:12px;font-weight:700;color:#94a3b8;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em;">Total</p>
+      <p style="font-size:32px;font-weight:900;color:#0f172a;margin:0;">{{ total }}</p>
+      <p style="font-size:12px;color:#94a3b8;margin:4px 0 0;">movimientos</p>
     </div>
+
+    <div style="background:#f0fdf4;border-radius:16px;border:1px solid #bbf7d0;padding:20px;">
+      <p style="font-size:12px;font-weight:700;color:#16a34a;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em;">↑ Entradas</p>
+      <p style="font-size:32px;font-weight:900;color:#15803d;margin:0;">{{ total_e }}</p>
+      {% if total > 0 %}
+      <p style="font-size:12px;color:#16a34a;margin:4px 0 0;">{{ (total_e / total * 100)|round(0)|int }}% del total</p>
+      {% endif %}
+    </div>
+
+    <div style="background:#fff7ed;border-radius:16px;border:1px solid #fed7aa;padding:20px;">
+      <p style="font-size:12px;font-weight:700;color:#ea580c;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em;">↓ Salidas</p>
+      <p style="font-size:32px;font-weight:900;color:#c2410c;margin:0;">{{ total_s }}</p>
+      {% if total > 0 %}
+      <p style="font-size:12px;color:#ea580c;margin:4px 0 0;">{{ (total_s / total * 100)|round(0)|int }}% del total</p>
+      {% endif %}
+    </div>
+
+    <div style="background:#fff1f2;border-radius:16px;border:1px solid #fecaca;padding:20px;">
+      <p style="font-size:12px;font-weight:700;color:#dc2626;margin:0 0 6px;text-transform:uppercase;letter-spacing:.05em;">🗑 Eliminados</p>
+      <p style="font-size:32px;font-weight:900;color:#b91c1c;margin:0;">{{ total_el }}</p>
+      {% if total > 0 %}
+      <p style="font-size:12px;color:#dc2626;margin:4px 0 0;">{{ (total_el / total * 100)|round(0)|int }}% del total</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- BANNER ANÁLISIS -->
+  {% set eliminaciones = movimientos|selectattr('tipo_movimiento','equalto','eliminacion')|list|length %}
+  <div style="border-radius:20px;padding:24px 28px;
+              background:{% if eliminaciones > 5 %}linear-gradient(135deg,#7f1d1d,#991b1b){% else %}linear-gradient(135deg,#064e3b,#065f46){% endif %};
+              color:white;display:flex;align-items:center;gap:16px;">
+    <div style="font-size:32px;flex-shrink:0;">{% if eliminaciones > 5 %}⚠️{% else %}✅{% endif %}</div>
+    <div>
+      <p style="font-weight:900;font-size:16px;margin:0 0 4px;">Análisis del sistema</p>
+      {% if eliminaciones > 5 %}
+        <p style="font-size:14px;color:#fca5a5;margin:0;">Alto número de eliminaciones detectadas ({{ eliminaciones }}). Revisa posibles errores o manipulación indebida.</p>
+      {% else %}
+        <p style="font-size:14px;color:#6ee7b7;margin:0;">El sistema no presenta anomalías en los movimientos registrados.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div style="background:white;border-radius:20px;padding:24px;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+    <p style="font-size:13px;font-weight:700;color:#64748b;margin:0 0 14px;text-transform:uppercase;letter-spacing:.05em;">
+      Filtrar movimientos
+    </p>
+
+    <form method="GET">
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">TIPO</label>
+          <select name="tipo" class="filtro-input">
+            <option value="">Todos</option>
+            <option value="entrada"     {% if request.args.get('tipo') == 'entrada'     %}selected{% endif %}>↑ Entrada</option>
+            <option value="salida"      {% if request.args.get('tipo') == 'salida'      %}selected{% endif %}>↓ Salida</option>
+            <option value="eliminacion" {% if request.args.get('tipo') == 'eliminacion' %}selected{% endif %}>🗑 Eliminado</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">DESDE</label>
+          <input type="date" name="desde" class="filtro-input" value="{{ request.args.get('desde', '') }}">
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">HASTA</label>
+          <input type="date" name="hasta" class="filtro-input" value="{{ request.args.get('hasta', '') }}">
+        </div>
+
+        <div>
+          <label style="font-size:11px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">USUARIO</label>
+          <div style="position:relative;">
+            <input type="text"
+                   name="usuario"
+                   id="inputUsuario"
+                   placeholder="Buscar usuario..."
+                   autocomplete="off"
+                   class="filtro-input"
+                   value="{{ request.args.get('usuario', '') }}"
+                   oninput="filtrarUsuarios(this.value)"
+                   onfocus="mostrarDropdown()"
+                   onblur="setTimeout(ocultarDropdown, 200)">
+
+            <div id="dropdownUsuarios"
+                 style="display:none; position:absolute; top:calc(100% + 4px); left:0; right:0;
+                        z-index:9999; background:white; border:1.5px solid #e2e8f0;
+                        border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.12);
+                        max-height:200px; overflow-y:auto;">
+
+              <div class="opcion-usuario" onclick="seleccionarUsuario('')">
+                <div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:12px;font-weight:900;color:#475569;flex-shrink:0;">*</div>
+                <span style="color:#94a3b8;font-style:italic;">Todos los usuarios</span>
+              </div>
+
+              {% for u in usuarios_lista %}
+              <div class="opcion-usuario"
+                   data-username="{{ u.username }}"
+                   onclick="seleccionarUsuario('{{ u.username }}')">
+                {% if u.foto_perfil %}
+                  <img src="{{ url_for('static', filename='img_perfiles/' ~ u.foto_perfil) }}"
+                       style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                {% else %}
+                  <div style="width:28px;height:28px;border-radius:50%;
+                              background:linear-gradient(135deg,#0f3d2e,#14532d);
+                              display:flex;align-items:center;justify-content:center;
+                              font-size:12px;font-weight:900;color:white;flex-shrink:0;">
+                    {{ u.username[0]|upper }}
+                  </div>
+                {% endif %}
+                {{ u.username }}
+              </div>
+              {% endfor %}
+
+              <div id="sinUsuarios"
+                   style="display:none;padding:12px 14px;font-size:13px;
+                          color:#94a3b8;font-weight:600;text-align:center;">
+                No se encontró ese usuario
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:flex-end;">
+          <button type="submit"
+                  style="width:100%;padding:10px 20px;background:#047857;color:white;
+                         border:none;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;">
+            Filtrar
+          </button>
+        </div>
+
+        <div style="display:flex;align-items:flex-end;">
+          <a href="{{ url_for('historial') }}"
+             style="display:block;width:100%;padding:10px 20px;background:#f1f5f9;
+                    color:#475569;border-radius:10px;font-weight:700;font-size:14px;
+                    text-align:center;text-decoration:none;box-sizing:border-box;">
+            Limpiar
+          </a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- TABLA -->
+  <div style="background:white;border-radius:20px;overflow:hidden;
+              border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+
+    <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;position:relative;">
+      <span style="position:absolute;left:34px;top:50%;transform:translateY(-50%);
+                   font-size:16px;color:#94a3b8;">🔍</span>
+      <input type="text" id="buscador" placeholder="Buscar por material, usuario, tipo...">
+    </div>
+
+    <div style="padding:10px 20px;border-bottom:1px solid #f1f5f9;background:#fafafa;
+                display:flex;justify-content:space-between;align-items:center;">
+      <p style="font-size:13px;color:#64748b;font-weight:600;margin:0;">
+        Mostrando <span id="contadorFilas" style="font-weight:900;color:#0f172a;">{{ movimientos|length }}</span> movimientos
+      </p>
+      {% if movimientos %}
+      <p style="font-size:12px;color:#94a3b8;margin:0;">
+        Más reciente: {{ movimientos[0].fecha_hora }}
+      </p>
+      {% endif %}
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <thead>
+          <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+            <th style="padding:14px 16px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">ID</th>
+            <th style="padding:14px 16px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Tipo</th>
+            <th style="padding:14px 16px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Material</th>
+            <th style="padding:14px 16px;text-align:center;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Cantidad</th>
+            <th style="padding:14px 16px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Fecha y hora</th>
+            <th style="padding:14px 16px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Usuario</th>
+          </tr>
+        </thead>
+        <tbody id="tabla">
+          {% for m in movimientos %}
+          <tr class="fila-tabla fila" style="border-bottom:1px solid #f1f5f9;transition:background .15s;">
+
+            <td style="padding:14px 16px;color:#94a3b8;font-weight:700;font-size:13px;">#{{ m.id }}</td>
+
+            <td style="padding:14px 16px;">
+              {% if m.tipo_movimiento == 'entrada' %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>
+                  <span style="background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">↑ Entrada</span>
+                </div>
+              {% elif m.tipo_movimiento == 'salida' %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#f97316;flex-shrink:0;"></span>
+                  <span style="background:#ffedd5;color:#c2410c;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">↓ Salida</span>
+                </div>
+              {% else %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;"></span>
+                  <span style="background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">🗑 Eliminado</span>
+                </div>
+              {% endif %}
+            </td>
+
+            <td style="padding:14px 16px;">
+              <p style="font-weight:700;color:#0f172a;margin:0;">{{ m.nombre_material }}</p>
+            </td>
+
+            <td style="padding:14px 16px;text-align:center;">
+              <span style="font-size:18px;font-weight:900;
+                color:{% if m.tipo_movimiento == 'entrada' %}#15803d{% elif m.tipo_movimiento == 'salida' %}#c2410c{% else %}#b91c1c{% endif %};">
+                {% if m.tipo_movimiento == 'entrada' %}+{% elif m.tipo_movimiento == 'salida' %}-{% endif %}{{ m.cantidad }}
+              </span>
+            </td>
+
+            <td style="padding:14px 16px;">
+              {% if m.fecha_hora %}
+                {% set fh = m.fecha_hora|string %}
+                <p style="font-weight:700;color:#0f172a;margin:0;font-size:14px;">
+                  {{ fh[:10].split('-')[2] }}/{{ fh[:10].split('-')[1] }}/{{ fh[:10].split('-')[0] }}
+                </p>
+                <p style="font-size:12px;color:#94a3b8;margin:2px 0 0;">🕐 {{ fh[11:16] }} hrs</p>
+              {% else %}
+                <p style="color:#94a3b8;margin:0;">—</p>
+              {% endif %}
+            </td>
+
+            <td style="padding:14px 16px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                {% if m.foto_perfil %}
+                  <img src="{{ url_for('static', filename='img_perfiles/' ~ m.foto_perfil) }}"
+                       style="width:30px;height:30px;border-radius:50%;object-fit:cover;
+                              flex-shrink:0;border:2px solid #e2e8f0;">
+                {% else %}
+                  <div style="width:30px;height:30px;border-radius:50%;
+                              background:linear-gradient(135deg,#0f3d2e,#14532d);
+                              display:flex;align-items:center;justify-content:center;
+                              font-size:12px;font-weight:900;color:white;flex-shrink:0;">
+                    {{ m.usuario[0]|upper if m.usuario else '?' }}
+                  </div>
+                {% endif %}
+                <span style="font-weight:600;color:#374151;">{{ m.usuario or '—' }}</span>
+              </div>
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div id="sinResultados" style="display:none;text-align:center;padding:60px 0;">
+      <p style="font-size:40px;margin-bottom:12px;">🔍</p>
+      <p style="font-weight:900;color:#0f172a;font-size:16px;margin:0 0 6px;">Sin resultados</p>
+      <p style="color:#94a3b8;margin:0;">No se encontraron movimientos con ese criterio.</p>
+    </div>
+
+    {% if not movimientos %}
+    <div style="text-align:center;padding:60px 0;">
+      <p style="font-size:40px;margin-bottom:12px;">📋</p>
+      <p style="font-weight:900;color:#0f172a;font-size:16px;margin:0 0 6px;">Sin movimientos</p>
+      <p style="color:#94a3b8;margin:0;">No hay registros con los filtros aplicados.</p>
+    </div>
+    {% endif %}
+
+  </div>
+
 </div>
+</div>
+
+<script>
+var buscador      = document.getElementById('buscador');
+var filas         = document.querySelectorAll('.fila');
+var sinResultados = document.getElementById('sinResultados');
+var contador      = document.getElementById('contadorFilas');
+
+buscador.addEventListener('input', function() {
+  var texto    = this.value.toLowerCase().trim();
+  var visibles = 0;
+
+  filas.forEach(function(fila) {
+    var contenido = fila.innerText.toLowerCase();
+    if (contenido.indexOf(texto) !== -1) {
+      fila.style.display = '';
+      visibles++;
+    } else {
+      fila.style.display = 'none';
+    }
+  });
+
+  contador.textContent = visibles;
+  sinResultados.style.display = (visibles === 0 && texto !== '') ? 'block' : 'none';
+});
+
+function mostrarDropdown() {
+  document.getElementById('dropdownUsuarios').style.display = 'block';
+}
+
+function ocultarDropdown() {
+  document.getElementById('dropdownUsuarios').style.display = 'none';
+}
+
+function seleccionarUsuario(username) {
+  document.getElementById('inputUsuario').value = username;
+  ocultarDropdown();
+}
+
+function filtrarUsuarios(texto) {
+  var opciones    = document.querySelectorAll('.opcion-usuario[data-username]');
+  var sinResult   = document.getElementById('sinUsuarios');
+  var encontrados = 0;
+  texto = texto.toLowerCase().trim();
+
+  opciones.forEach(function(op) {
+    var name = op.getAttribute('data-username').toLowerCase();
+    if (name.indexOf(texto) !== -1) {
+      op.style.display = 'flex';
+      encontrados++;
+    } else {
+      op.style.display = 'none';
+    }
+  });
+
+  sinResult.style.display = encontrados === 0 ? 'block' : 'none';
+  mostrarDropdown();
+}
+</script>
+
 {% endblock %}

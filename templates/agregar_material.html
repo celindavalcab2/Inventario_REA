@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% block title %}Agregar Material{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-10">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Agregar Nuevo Material</h1>
+        <p class="text-slate-500 mt-1">Registra materiales, stock inicial e imagen del material.</p>
+      </div>
+
+      <a href="{{ url_for('materiales') }}"
+         class="px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 shadow-sm">
+        Volver
+      </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="formAgregarMaterial"
+          class="grid grid-cols-1 lg:grid-cols-[2fr_380px] gap-8 items-start">
+
+      <input type="hidden" name="admin_password" id="admin_password">
+
+      <!-- PANEL IZQUIERDO -->
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl">📦</div>
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">Datos del material</h2>
+            <p class="text-slate-500">Completa la información principal del inventario.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-5">
+          <div>
+            <label class="text-sm font-bold text-slate-700">Nombre del material</label>
+            <input type="text" name="nombre" required
+                   class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-700"
+                   placeholder="Ej. Cemento Portland Tipo I">
+          </div>
+
+          <div>
+            <label class="text-sm font-bold text-slate-700">Categoría</label>
+            <select name="categoria" required
+                    class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-700">
+              <option value="Cemento y agregados">Cemento y agregados</option>
+              <option value="Fierro y acero">Fierro y acero</option>
+              <option value="Ladrillos y bloques">Ladrillos y bloques</option>
+              <option value="Tuberías y conexiones">Tuberías y conexiones</option>
+              <option value="Material eléctrico">Material eléctrico</option>
+              <option value="Pinturas y acabados">Pinturas y acabados</option>
+              <option value="Herramientas y equipos">Herramientas y equipos</option>
+              <option value="Seguridad industrial">Seguridad industrial</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-sm font-bold text-slate-700">Imagen del material</label>
+
+            <div class="mt-2 border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-emerald-500 transition bg-slate-50">
+              <input type="file" name="foto_material" id="foto_material"
+                     accept="image/png,image/jpeg,image/webp"
+                     class="hidden"
+                     onchange="previewImagen(event)">
+
+              <label for="foto_material" class="cursor-pointer block">
+                <div id="previewContainer" class="flex flex-col items-center justify-center gap-3">
+                  <div id="iconoSubida" class="text-4xl text-slate-400">📷</div>
+
+                  <p class="text-slate-600 font-bold">Haz clic para subir imagen</p>
+                  <p class="text-xs text-slate-400">PNG, JPG, JPEG o WEBP</p>
+
+                  <div id="checkImagen" class="hidden mt-3 bg-emerald-100 text-emerald-700 w-fit px-4 py-2 rounded-full font-black text-sm">
+                    ✅ Imagen cargada correctamente
+                  </div>
+                </div>
+
+                <img id="previewImagen"
+                     class="hidden mt-4 rounded-xl shadow-md max-h-48 mx-auto object-cover">
+              </label>
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <h3 class="text-xl font-black text-slate-800 mb-5">Control de stock</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+              <div class="flex flex-col">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Stock actual</label>
+                <input type="number" min="0" name="stock_actual" id="stock_actual" required
+                       class="campo w-full px-4 py-4 rounded-2xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-700 text-center font-black text-lg"
+                       placeholder="50">
+              </div>
+
+              <div class="flex flex-col">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Stock óptimo</label>
+                <input type="number" min="1" name="stock_optimo" id="stock_optimo" required
+                       class="campo w-full px-4 py-4 rounded-2xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-700 text-center font-black text-lg"
+                       placeholder="100">
+              </div>
+
+              <div class="flex flex-col">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Stock máximo</label>
+                <input type="number" min="1" name="stock_maximo" id="stock_maximo" required
+                       class="campo w-full px-4 py-4 rounded-2xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-700 text-center font-black text-lg"
+                       placeholder="200">
+              </div>
+            </div>
+
+            <div id="alertaStock" class="hidden mt-6 rounded-2xl p-5 border font-bold"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL DERECHO -->
+      <div class="bg-slate-900 text-white rounded-3xl shadow-xl p-8 h-fit sticky top-8">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center text-2xl mb-5">✅</div>
+
+        <h2 class="text-xl font-black mb-2">Resumen automático</h2>
+        <p class="text-slate-300 text-sm mb-6">
+          El sistema evaluará el estado del material antes de registrarlo.
+        </p>
+
+        <div class="space-y-4 text-sm">
+          <div class="bg-slate-800 rounded-2xl p-4">
+            <p class="text-slate-400">Estado estimado</p>
+            <p id="estadoTexto" class="font-black text-white">Completa el stock</p>
+          </div>
+
+          <div id="avisoCambios" class="hidden bg-yellow-100 text-yellow-800 rounded-2xl p-4 font-bold">
+            Datos pendientes por guardar.
+          </div>
+        </div>
+
+        <button type="submit" id="btnGuardar"
+                class="mt-8 w-full bg-emerald-600 text-white py-4 rounded-2xl font-black hover:bg-emerald-700 shadow-lg">
+          Guardar material
+        </button>
+
+        <a href="{{ url_for('materiales') }}"
+           class="block text-center mt-4 text-slate-300 font-bold hover:text-white">
+          Cancelar
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- MODAL CONTRASEÑA -->
+<div id="modalPassword" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
+  <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 border border-slate-100">
+    <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl mb-5">
+      🔐
+    </div>
+
+    <h2 class="text-2xl font-black text-slate-900">Confirmar registro</h2>
+    <p class="text-slate-500 mt-2">
+      Para agregar este material, ingresa la contraseña del usuario actual.
+    </p>
+
+    <label class="block text-sm font-bold text-slate-700 mt-5">Contraseña</label>
+    <input type="password" id="passwordModal"
+           class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-700"
+           placeholder="Escribe tu contraseña">
+
+    <p id="errorPassword" class="hidden text-red-600 text-sm font-bold mt-2">
+      Debes ingresar tu contraseña.
+    </p>
+
+    <div class="flex gap-3 mt-7">
+      <button type="button" onclick="cerrarModalPassword()"
+              class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-black hover:bg-slate-300">
+        Cancelar
+      </button>
+
+      <button type="button" onclick="confirmarGuardarMaterial()"
+              class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black hover:bg-emerald-700 shadow">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const campos = document.querySelectorAll('.campo');
+const avisoCambios = document.getElementById('avisoCambios');
+const alertaStock = document.getElementById('alertaStock');
+const estadoTexto = document.getElementById('estadoTexto');
+const btnGuardar = document.getElementById('btnGuardar');
+
+const stockActual = document.getElementById('stock_actual');
+const stockOptimo = document.getElementById('stock_optimo');
+const stockMaximo = document.getElementById('stock_maximo');
+const formAgregar = document.getElementById('formAgregarMaterial');
+
+let formularioConfirmado = false;
+
+function previewImagen(event) {
+  const file = event.target.files[0];
+  const preview = document.getElementById('previewImagen');
+  const icono = document.getElementById('iconoSubida');
+  const check = document.getElementById('checkImagen');
+
+  if (file) {
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.classList.remove('hidden');
+      icono.classList.add('hidden');
+      check.classList.remove('hidden');
+    };
+
+    reader.readAsDataURL(file);
+  }
+}
+
+function evaluarStock() {
+  const actual = Number(stockActual.value);
+  const optimo = Number(stockOptimo.value);
+  const maximo = Number(stockMaximo.value);
+
+  alertaStock.className = 'mt-6 rounded-2xl p-5 border font-bold hidden';
+  btnGuardar.disabled = false;
+  btnGuardar.classList.remove('opacity-60', 'cursor-not-allowed');
+
+  if (!stockActual.value || !stockOptimo.value || !stockMaximo.value) {
+    estadoTexto.innerText = 'Completa el stock';
+    estadoTexto.className = 'font-black text-white';
+    return;
+  }
+
+  if (optimo > maximo) {
+    alertaStock.innerText = 'Error: el stock óptimo no puede ser mayor que el stock máximo.';
+    alertaStock.className = 'mt-6 rounded-2xl p-5 border bg-red-50 border-red-100 text-red-700 font-bold';
+    estadoTexto.innerText = 'Datos inválidos';
+    estadoTexto.className = 'font-black text-red-400';
+    btnGuardar.disabled = true;
+    btnGuardar.classList.add('opacity-60', 'cursor-not-allowed');
+    return;
+  }
+
+  if (actual > maximo) {
+    alertaStock.innerText = 'Advertencia: el stock actual supera el máximo. Se registrará como exceso.';
+    alertaStock.className = 'mt-6 rounded-2xl p-5 border bg-blue-50 border-blue-100 text-blue-700 font-bold';
+    estadoTexto.innerText = 'Exceso';
+    estadoTexto.className = 'font-black text-blue-400';
+    return;
+  }
+
+  if (actual < optimo * 0.5) {
+    estadoTexto.innerText = 'Crítico';
+    estadoTexto.className = 'font-black text-red-400';
+  } else if (actual < optimo) {
+    estadoTexto.innerText = 'Regular';
+    estadoTexto.className = 'font-black text-yellow-400';
+  } else {
+    estadoTexto.innerText = 'Óptimo';
+    estadoTexto.className = 'font-black text-emerald-400';
+  }
+}
+
+campos.forEach(campo => {
+  campo.addEventListener('input', () => {
+    avisoCambios.classList.remove('hidden');
+    evaluarStock();
+  });
+
+  campo.addEventListener('change', () => {
+    avisoCambios.classList.remove('hidden');
+    evaluarStock();
+  });
+});
+
+formAgregar.addEventListener('submit', function(e) {
+  if (!formularioConfirmado) {
+    e.preventDefault();
+    abrirModalPassword();
+  }
+});
+
+function abrirModalPassword() {
+  document.getElementById('passwordModal').value = '';
+  document.getElementById('errorPassword').classList.add('hidden');
+  document.getElementById('modalPassword').classList.remove('hidden');
+
+  setTimeout(() => {
+    document.getElementById('passwordModal').focus();
+  }, 100);
+}
+
+function cerrarModalPassword() {
+  document.getElementById('modalPassword').classList.add('hidden');
+}
+
+function confirmarGuardarMaterial() {
+  const password = document.getElementById('passwordModal').value.trim();
+
+  if (!password) {
+    document.getElementById('errorPassword').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('admin_password').value = password;
+
+  formularioConfirmado = true;
+  btnGuardar.innerText = 'Guardando...';
+  btnGuardar.disabled = true;
+
+  formAgregar.submit();
+}
+
+document.getElementById('passwordModal').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') confirmarGuardarMaterial();
+  if (e.key === 'Escape') cerrarModalPassword();
+});
+
+document.getElementById('modalPassword').addEventListener('click', function(e) {
+  if (e.target.id === 'modalPassword') cerrarModalPassword();
+});
+
+evaluarStock();
+</script>
+
+{% endblock %}

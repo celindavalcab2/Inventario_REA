@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block title %}Usuarios{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-100 px-10 py-10">
+
+  <div class="max-w-7xl mx-auto">
+
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-10">
+      <div>
+        <h1 class="text-4xl font-extrabold text-slate-900">
+          Gestión de Usuarios
+        </h1>
+        <p class="text-slate-500 mt-1">
+          Control de accesos, roles y seguridad del sistema
+        </p>
+      </div>
+
+      <a href="{{ url_for('registrar_usuario') }}"
+         class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition">
+        + Nuevo Usuario
+      </a>
+    </div>
+
+    <!-- TARJETAS KPI -->
+    <div class="grid grid-cols-3 gap-6 mb-10">
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-sm text-slate-500">Total Usuarios</p>
+        <h2 class="text-3xl font-bold text-slate-800">
+          {{ administradores|length + usuarios|length }}
+        </h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-sm text-slate-500">Administradores</p>
+        <h2 class="text-3xl font-bold text-emerald-600">
+          {{ administradores|length }}
+        </h2>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow">
+        <p class="text-sm text-slate-500">Usuarios</p>
+        <h2 class="text-3xl font-bold text-blue-600">
+          {{ usuarios|length }}
+        </h2>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+
+      <table class="w-full">
+        <thead class="bg-slate-900 text-white text-sm">
+          <tr>
+            <th class="px-6 py-4 text-left">Usuario</th>
+            <th class="px-6 py-4 text-center">DNI</th>
+            <th class="px-6 py-4 text-center">Rol</th>
+            <th class="px-6 py-4 text-center">Permiso</th>
+            <th class="px-6 py-4 text-center">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y">
+
+          {% for u in administradores + usuarios %}
+          <tr class="hover:bg-slate-50 transition">
+
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-4">
+
+                <!-- AVATAR CON FOTO O INICIAL -->
+                {% if u.foto_perfil %}
+                  <img src="{{ url_for('static', filename='img_perfiles/' ~ u.foto_perfil) }}"
+                       class="w-12 h-12 rounded-full object-cover border-2 border-slate-200">
+                {% else %}
+                  <div class="w-12 h-12 bg-slate-800 text-white flex items-center justify-center rounded-full font-bold text-lg">
+                    {{ u.nombres[0]|upper }}
+                  </div>
+                {% endif %}
+
+                <div>
+                  <p class="font-bold text-slate-800">
+                    {{ u.nombres }} {{ u.apellidos }}
+                  </p>
+                  <p class="text-xs text-slate-500">@{{ u.username }}</p>
+                </div>
+              </div>
+            </td>
+
+            <td class="px-6 py-4 text-center">{{ u.dni or '-' }}</td>
+
+            <td class="px-6 py-4 text-center">
+              {% if u.rol == 'administrador' %}
+                <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                  Admin
+                </span>
+              {% else %}
+                <span class="bg-gray-200 px-3 py-1 rounded-full text-xs">
+                  Usuario
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="px-6 py-4 text-center">
+              {{ u.permiso }}
+            </td>
+
+            <td class="px-6 py-4 text-center">
+              <a href="{{ url_for('editar_usuario', id=u.id) }}"
+                 class="text-blue-600 font-semibold hover:underline mr-4">
+                Editar
+              </a>
+
+              <button onclick="abrirModal({{ u.id }}, '{{ u.username }}')"
+                      class="text-red-600 font-semibold hover:underline">
+                Eliminar
+              </button>
+            </td>
+
+          </tr>
+          {% endfor %}
+
+        </tbody>
+      </table>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL ELIMINAR -->
+<div id="modalEliminar"
+     class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center z-50">
+
+  <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 animate-modal relative">
+
+    <div class="flex items-start gap-4 mb-5">
+      <div class="bg-red-100 text-red-600 p-4 rounded-full text-2xl shadow-inner">
+        ⚠️
+      </div>
+      <div>
+        <h2 class="text-2xl font-extrabold text-slate-900">
+          Confirmar eliminación
+        </h2>
+        <p class="text-slate-500 text-sm mt-1">
+          Acción crítica del sistema
+        </p>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <p id="textoModal" class="text-slate-600 leading-relaxed">
+        Estás a punto de eliminar un usuario.
+      </p>
+      <p class="text-red-600 text-sm font-semibold mt-2">
+        ⚠️ Esta acción es permanente y NO se puede deshacer.
+      </p>
+    </div>
+
+    <div class="mb-6">
+      <label class="text-sm font-semibold text-slate-700 mb-2 block">
+        Verificación de seguridad
+      </label>
+      <input type="password"
+             id="passwordEliminar"
+             class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none transition"
+             placeholder="Ingrese su contraseña para continuar">
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <button onclick="cerrarModal()"
+              class="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 transition font-medium">
+        Cancelar
+      </button>
+      <button onclick="confirmarEliminar()"
+              class="px-6 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 shadow-lg transition">
+        Eliminar definitivamente
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes modalEntrada {
+  from { opacity:0; transform:scale(0.9); }
+  to   { opacity:1; transform:scale(1); }
+}
+.animate-modal {
+  animation: modalEntrada 0.2s ease;
+}
+</style>
+
+<script>
+let userIdEliminar = null;
+
+function abrirModal(id, username) {
+  userIdEliminar = id;
+
+  document.getElementById('textoModal').innerHTML =
+    `Estás a punto de eliminar al usuario <strong>${username}</strong>.<br>
+     Esta acción eliminará el acceso al sistema de forma permanente.`;
+
+  document.getElementById('modalEliminar').classList.remove('hidden');
+  document.getElementById('modalEliminar').classList.add('flex');
+  document.getElementById('passwordEliminar').value = '';
+}
+
+function cerrarModal() {
+  document.getElementById('modalEliminar').classList.add('hidden');
+  document.getElementById('modalEliminar').classList.remove('flex');
+}
+
+function confirmarEliminar() {
+  const password = document.getElementById('passwordEliminar').value;
+
+  if (!password) {
+    alert('⚠️ Ingrese la contraseña del administrador');
+    return;
+  }
+
+  fetch(`/verificar_password_eliminar_usuario/${userIdEliminar}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: password })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+
+      document.querySelector('#modalEliminar .bg-white').innerHTML = `
+        <div class="py-10 text-center">
+          <div class="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center text-4xl mb-4">
+            ✔
+          </div>
+          <h2 class="text-2xl font-bold text-slate-800 mb-2">Usuario eliminado</h2>
+          <p class="text-slate-500">El registro fue eliminado correctamente del sistema.</p>
+        </div>
+      `;
+
+      fetch(`/eliminar_usuario/${userIdEliminar}`, { method: 'POST' })
+      .then(() => {
+        setTimeout(() => { window.location.href = '/usuarios'; }, 1200);
+      });
+
+    } else {
+      alert('❌ Contraseña incorrecta');
+    }
+  })
+  .catch(error => {
+    console.error(error);
+    alert('❌ Error interno del sistema');
+  });
+}
+</script>
+
+{% endblock %}

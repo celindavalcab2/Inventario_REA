@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% block title %}Cambiar Contraseña{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-10">
+  <div class="max-w-xl mx-auto">
+
+    <!-- ENCABEZADO -->
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Cambiar Contraseña</h1>
+        <p class="text-slate-500 mt-1">Actualiza tu contraseña de acceso al sistema.</p>
+      </div>
+      <a href="{{ url_for('mi_perfil') }}"
+         style="padding:10px 18px; background:white; border:1.5px solid #e2e8f0;
+                border-radius:12px; font-weight:700; font-size:14px; color:#374151;
+                text-decoration:none;">
+        ← Volver
+      </a>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div style="background:white; border-radius:24px; padding:36px; border:1px solid #e2e8f0;
+                box-shadow:0 4px 16px rgba(0,0,0,0.07);">
+
+      <div style="width:64px; height:64px; background:#f0fdf4; border-radius:16px;
+                  display:flex; align-items:center; justify-content:center;
+                  font-size:30px; margin-bottom:20px;">
+        🔑
+      </div>
+
+      <h2 style="font-size:20px; font-weight:900; color:#0f172a; margin:0 0 6px;">
+        Nueva contraseña
+      </h2>
+      <p style="font-size:14px; color:#64748b; margin:0 0 28px;">
+        Ingresa tu contraseña actual y luego escribe la nueva dos veces para confirmar.
+      </p>
+
+      <form method="POST" id="formCambio">
+
+        <!-- Contraseña actual -->
+        <div style="margin-bottom:18px;">
+          <label style="font-size:13px; font-weight:700; color:#374151; display:block; margin-bottom:8px;">
+            Contraseña actual
+          </label>
+          <div style="position:relative;">
+            <input type="password" name="password_actual" id="pwd_actual" required
+                   placeholder="••••••••"
+                   style="width:100%; padding:13px 44px 13px 16px; border:2px solid #e2e8f0;
+                          border-radius:12px; font-size:15px; outline:none; box-sizing:border-box;"
+                   onfocus="this.style.borderColor='#0f3d2e'"
+                   onblur="this.style.borderColor='#e2e8f0'">
+            <button type="button" onclick="togglePwd('pwd_actual', this)"
+                    style="position:absolute; right:14px; top:50%; transform:translateY(-50%);
+                           background:none; border:none; cursor:pointer; font-size:18px;">👁️</button>
+          </div>
+        </div>
+
+        <div style="height:1px; background:#f1f5f9; margin:20px 0;"></div>
+
+        <!-- Nueva contraseña -->
+        <div style="margin-bottom:18px;">
+          <label style="font-size:13px; font-weight:700; color:#374151; display:block; margin-bottom:8px;">
+            Nueva contraseña
+          </label>
+          <div style="position:relative;">
+            <input type="password" name="password_nueva" id="pwd_nueva" required
+                   placeholder="Mínimo 8 caracteres"
+                   oninput="validarFortaleza(this.value)"
+                   style="width:100%; padding:13px 44px 13px 16px; border:2px solid #e2e8f0;
+                          border-radius:12px; font-size:15px; outline:none; box-sizing:border-box;"
+                   onfocus="this.style.borderColor='#0f3d2e'"
+                   onblur="this.style.borderColor='#e2e8f0'">
+            <button type="button" onclick="togglePwd('pwd_nueva', this)"
+                    style="position:absolute; right:14px; top:50%; transform:translateY(-50%);
+                           background:none; border:none; cursor:pointer; font-size:18px;">👁️</button>
+          </div>
+
+          <!-- Barra de fortaleza -->
+          <div style="margin-top:8px;">
+            <div style="height:6px; background:#f1f5f9; border-radius:999px; overflow:hidden;">
+              <div id="barraFortaleza"
+                   style="height:100%; width:0%; border-radius:999px; transition:all .3s;"></div>
+            </div>
+            <p id="textoFortaleza"
+               style="font-size:12px; font-weight:700; color:#94a3b8; margin:4px 0 0;"></p>
+          </div>
+        </div>
+
+        <!-- Confirmar contraseña -->
+        <div style="margin-bottom:24px;">
+          <label style="font-size:13px; font-weight:700; color:#374151; display:block; margin-bottom:8px;">
+            Confirmar nueva contraseña
+          </label>
+          <div style="position:relative;">
+            <input type="password" name="password_confirmar" id="pwd_confirmar" required
+                   placeholder="Repite la nueva contraseña"
+                   oninput="verificarCoincidencia()"
+                   style="width:100%; padding:13px 44px 13px 16px; border:2px solid #e2e8f0;
+                          border-radius:12px; font-size:15px; outline:none; box-sizing:border-box;"
+                   onfocus="this.style.borderColor='#0f3d2e'"
+                   onblur="this.style.borderColor='#e2e8f0'">
+            <button type="button" onclick="togglePwd('pwd_confirmar', this)"
+                    style="position:absolute; right:14px; top:50%; transform:translateY(-50%);
+                           background:none; border:none; cursor:pointer; font-size:18px;">👁️</button>
+          </div>
+          <p id="msgCoincidencia"
+             style="font-size:12px; font-weight:700; margin:6px 0 0; display:none;"></p>
+        </div>
+
+        <!-- Requisitos -->
+        <div style="background:#f8fafc; border-radius:14px; padding:16px; margin-bottom:24px;">
+          <p style="font-size:12px; font-weight:700; color:#64748b; margin:0 0 8px; text-transform:uppercase; letter-spacing:.05em;">
+            Requisitos
+          </p>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div id="req-len" style="display:flex; align-items:center; gap:8px; font-size:13px; color:#94a3b8;">
+              <span id="ico-len">○</span> Mínimo 8 caracteres
+            </div>
+            <div id="req-dif" style="display:flex; align-items:center; gap:8px; font-size:13px; color:#94a3b8;">
+              <span id="ico-dif">○</span> Diferente a la contraseña actual
+            </div>
+            <div id="req-match" style="display:flex; align-items:center; gap:8px; font-size:13px; color:#94a3b8;">
+              <span id="ico-match">○</span> Las contraseñas coinciden
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón -->
+        <button type="submit" id="btnGuardar"
+                style="width:100%; padding:15px; background:#0f3d2e; color:white;
+                       border:none; border-radius:14px; font-weight:900; font-size:16px;
+                       cursor:pointer;">
+          Actualizar contraseña
+        </button>
+
+      </form>
+    </div>
+
+    <!-- Info extra -->
+    <div style="margin-top:16px; background:#fefce8; border:1px solid #fde68a; border-radius:16px;
+                padding:16px 20px; display:flex; gap:12px; align-items:flex-start;">
+      <span style="font-size:20px; flex-shrink:0;">⚠️</span>
+      <p style="font-size:13px; color:#854d0e; font-weight:600; margin:0; line-height:1.5;">
+        Al cambiar tu contraseña, deberás usar la nueva en tu próximo inicio de sesión
+        y en operaciones que requieran confirmación.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function togglePwd(id, btn) {
+  var input = document.getElementById(id);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁️';
+  }
+}
+
+function validarFortaleza(valor) {
+  var barra  = document.getElementById('barraFortaleza');
+  var texto  = document.getElementById('textoFortaleza');
+  var reqLen = document.getElementById('req-len');
+  var icoLen = document.getElementById('ico-len');
+
+  /* Requisito longitud */
+  if (valor.length >= 8) {
+    reqLen.style.color = '#15803d';
+    icoLen.textContent = '✓';
+  } else {
+    reqLen.style.color = '#94a3b8';
+    icoLen.textContent = '○';
+  }
+
+  var puntos = 0;
+  if (valor.length >= 8)   puntos++;
+  if (valor.length >= 12)  puntos++;
+  if (/[A-Z]/.test(valor)) puntos++;
+  if (/[0-9]/.test(valor)) puntos++;
+  if (/[^A-Za-z0-9]/.test(valor)) puntos++;
+
+  if (valor.length === 0) {
+    barra.style.width = '0%';
+    texto.textContent = '';
+  } else if (puntos <= 1) {
+    barra.style.width = '25%'; barra.style.background = '#ef4444';
+    texto.textContent = 'Muy débil'; texto.style.color = '#ef4444';
+  } else if (puntos === 2) {
+    barra.style.width = '50%'; barra.style.background = '#f97316';
+    texto.textContent = 'Débil'; texto.style.color = '#f97316';
+  } else if (puntos === 3) {
+    barra.style.width = '75%'; barra.style.background = '#eab308';
+    texto.textContent = 'Moderada'; texto.style.color = '#eab308';
+  } else {
+    barra.style.width = '100%'; barra.style.background = '#22c55e';
+    texto.textContent = 'Fuerte ✓'; texto.style.color = '#22c55e';
+  }
+
+  verificarCoincidencia();
+}
+
+function verificarCoincidencia() {
+  var nueva      = document.getElementById('pwd_nueva').value;
+  var confirmar  = document.getElementById('pwd_confirmar').value;
+  var msg        = document.getElementById('msgCoincidencia');
+  var reqMatch   = document.getElementById('req-match');
+  var icoMatch   = document.getElementById('ico-match');
+
+  if (confirmar.length === 0) {
+    msg.style.display = 'none';
+    reqMatch.style.color = '#94a3b8'; icoMatch.textContent = '○';
+    return;
+  }
+
+  msg.style.display = 'block';
+  if (nueva === confirmar) {
+    msg.textContent = '✓ Las contraseñas coinciden';
+    msg.style.color = '#15803d';
+    reqMatch.style.color = '#15803d'; icoMatch.textContent = '✓';
+  } else {
+    msg.textContent = '✗ Las contraseñas no coinciden';
+    msg.style.color = '#dc2626';
+    reqMatch.style.color = '#94a3b8'; icoMatch.textContent = '○';
+  }
+}
+
+document.getElementById('formCambio').addEventListener('submit', function(e) {
+  var nueva     = document.getElementById('pwd_nueva').value;
+  var confirmar = document.getElementById('pwd_confirmar').value;
+  var actual    = document.getElementById('pwd_actual').value;
+
+  if (nueva.length < 8) {
+    e.preventDefault();
+    alert('La nueva contraseña debe tener mínimo 8 caracteres.');
+    return;
+  }
+  if (nueva !== confirmar) {
+    e.preventDefault();
+    alert('Las contraseñas nuevas no coinciden.');
+    return;
+  }
+  if (nueva === actual) {
+    e.preventDefault();
+    alert('La nueva contraseña debe ser diferente a la actual.');
+    return;
+  }
+
+  var btn = document.getElementById('btnGuardar');
+  btn.textContent = 'Guardando...';
+  btn.disabled = true;
+});
+</script>
+
+{% endblock %}

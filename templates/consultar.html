@@ -1,75 +1,389 @@
 {% extends 'base.html' %}
-{% block title %}Consultar Productos{% endblock %}
+{% block title %}Consulta de Materiales{% endblock %}
 
 {% block content %}
-<h2 class="text-3xl font-semibold mb-6">Consultar Productos</h2>
 
-<form method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white shadow rounded-xl p-6 mb-8 border border-[var(--soft)]">
-  <div>
-    <label for="criterio" class="block text-[var(--text)] font-medium mb-2">Criterio</label>
-    <select id="criterio" name="criterio" 
-      class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
-      <option value="nombre">Nombre</option>
-      <option value="estado">Estado</option>
-      <option value="categoria">Categoría</option>
-    </select>
+<div class="min-h-screen bg-slate-50 px-6 py-8">
+
+  <div class="max-w-7xl mx-auto">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-8">
+
+      <div>
+        <h1 class="text-4xl font-black text-slate-900">
+          Consulta Ejecutiva de Materiales
+        </h1>
+
+        <p class="text-slate-500 mt-2">
+          Busca, analiza y visualiza materiales registrados en el inventario.
+        </p>
+      </div>
+
+      <a href="{{ url_for('materiales') }}"
+         class="px-5 py-3 rounded-2xl bg-white border border-slate-200 shadow hover:bg-slate-100 transition font-black text-slate-700">
+        Ver inventario completo
+      </a>
+
+    </div>
+
+    <!-- FILTRO -->
+    <div class="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100">
+
+      <div class="flex items-center gap-3 mb-6">
+
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl">
+          🔎
+        </div>
+
+        <div>
+          <h2 class="text-2xl font-black text-slate-900">
+            Filtro inteligente
+          </h2>
+
+          <p class="text-slate-500 text-sm">
+            Selecciona un criterio y consulta materiales específicos.
+          </p>
+        </div>
+
+      </div>
+
+      <form method="POST"
+            class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+        <!-- CRITERIO -->
+        <div class="md:col-span-3">
+
+          <label class="block text-sm font-black text-slate-700 mb-2">
+            Criterio
+          </label>
+
+          <select name="criterio"
+                  id="criterio"
+                  class="w-full px-4 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-emerald-600 outline-none font-bold">
+
+            <option value="nombre">Nombre</option>
+            <option value="categoria">Categoría</option>
+            <option value="estado">Estado</option>
+
+          </select>
+
+        </div>
+
+        <!-- VALOR -->
+        <div class="md:col-span-6">
+
+          <label class="block text-sm font-black text-slate-700 mb-2">
+            Valor de búsqueda
+          </label>
+
+          <input type="text"
+                 name="valor"
+                 id="valor"
+                 list="lista_nombres"
+                 placeholder="Selecciona o escribe un material..."
+                 required
+                 class="w-full px-4 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-emerald-600 outline-none">
+
+        </div>
+
+        <!-- BOTÓN -->
+        <div class="md:col-span-3 flex items-end">
+
+          <button type="submit"
+                  class="w-full bg-emerald-700 hover:bg-emerald-800 transition text-white font-black py-4 rounded-2xl shadow-lg">
+            Consultar
+          </button>
+
+        </div>
+
+      </form>
+
+      <!-- DATALIST NOMBRES -->
+      <datalist id="lista_nombres">
+        {% for n in lista_nombres %}
+          <option value="{{ n.nombre }}"></option>
+        {% endfor %}
+      </datalist>
+
+      <!-- DATALIST CATEGORIAS -->
+      <datalist id="lista_categorias">
+        {% for c in lista_categorias %}
+          <option value="{{ c.categoria }}"></option>
+        {% endfor %}
+      </datalist>
+
+      <!-- DATALIST ESTADOS -->
+      <datalist id="lista_estados">
+        <option value="Crítico"></option>
+        <option value="Regular"></option>
+        <option value="Óptimo"></option>
+        <option value="Exceso"></option>
+      </datalist>
+
+    </div>
+
+    <!-- RESULTADOS -->
+    {% if materiales %}
+
+    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+
+      <div class="px-6 py-5 border-b border-slate-100">
+
+        <h2 class="text-2xl font-black text-slate-900">
+          Resultados encontrados
+        </h2>
+
+        <p class="text-slate-500 text-sm mt-1">
+          {{ materiales|length }} materiales encontrados.
+        </p>
+
+      </div>
+
+      <div class="overflow-x-auto">
+
+        <table class="w-full">
+
+          <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
+
+            <tr>
+
+              <th class="px-6 py-4 text-left">Material</th>
+              <th class="px-6 py-4 text-left">Categoría</th>
+              <th class="px-6 py-4 text-center">Stock</th>
+              <th class="px-6 py-4 text-center">Óptimo</th>
+              <th class="px-6 py-4 text-center">Máximo</th>
+              <th class="px-6 py-4 text-center">Estado</th>
+              <th class="px-6 py-4 text-center">Acción recomendada</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody class="divide-y divide-slate-100">
+
+          {% for m in materiales %}
+
+          <tr class="hover:bg-slate-50 transition">
+
+            <!-- MATERIAL -->
+            <td class="px-6 py-5">
+
+              <div class="flex items-center gap-4">
+
+                {% if m.foto %}
+
+                <img src="{{ url_for('static', filename='img_materiales/' ~ m.foto) }}"
+                     onclick="abrirFotoMaterial('{{ m.nombre }}', '{{ url_for('static', filename='img_materiales/' ~ m.foto) }}')"
+                     class="w-20 h-20 rounded-2xl object-cover border border-slate-200 shadow cursor-pointer hover:scale-110 transition duration-300 bg-white">
+
+                {% else %}
+
+                <div class="w-20 h-20 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 text-xs font-black">
+                  Sin foto
+                </div>
+
+                {% endif %}
+
+                <div>
+
+                  <h3 class="font-black text-slate-900 text-lg">
+                    {{ m.nombre }}
+                  </h3>
+
+                  <p class="text-xs text-slate-400">
+                    Click en la imagen para ampliar
+                  </p>
+
+                </div>
+
+              </div>
+
+            </td>
+
+            <!-- CATEGORIA -->
+            <td class="px-6 py-5 font-semibold text-slate-700">
+              {{ m.categoria }}
+            </td>
+
+            <!-- STOCK -->
+            <td class="px-6 py-5 text-center font-black text-lg">
+              {{ m.stock_actual }}
+            </td>
+
+            <!-- OPTIMO -->
+            <td class="px-6 py-5 text-center font-bold">
+              {{ m.stock_optimo }}
+            </td>
+
+            <!-- MAXIMO -->
+            <td class="px-6 py-5 text-center font-bold">
+              {{ m.stock_maximo }}
+            </td>
+
+            <!-- ESTADO -->
+            <td class="px-6 py-5 text-center">
+
+              {% if m.estado == 'Crítico' %}
+                <span class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-xs font-black">
+                  Crítico
+                </span>
+
+              {% elif m.estado == 'Regular' %}
+                <span class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-xs font-black">
+                  Regular
+                </span>
+
+              {% elif m.estado == 'Óptimo' %}
+                <span class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-xs font-black">
+                  Óptimo
+                </span>
+
+              {% else %}
+                <span class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-xs font-black">
+                  Exceso
+                </span>
+              {% endif %}
+
+            </td>
+
+            <!-- ACCION -->
+            <td class="px-6 py-5 text-center">
+
+              {% if m.estado == 'Crítico' %}
+                <span class="text-red-700 font-black">
+                  Reposición urgente
+                </span>
+
+              {% elif m.estado == 'Regular' %}
+                <span class="text-yellow-700 font-black">
+                  Programar compra
+                </span>
+
+              {% elif m.estado == 'Óptimo' %}
+                <span class="text-emerald-700 font-black">
+                  Mantener control
+                </span>
+
+              {% else %}
+                <span class="text-blue-700 font-black">
+                  Revisar exceso
+                </span>
+              {% endif %}
+
+            </td>
+
+          </tr>
+
+          {% endfor %}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+    {% else %}
+
+    <!-- VACIO -->
+    <div class="bg-white rounded-3xl shadow-xl p-16 text-center border border-slate-100">
+
+      <div class="text-7xl mb-5">
+        📊
+      </div>
+
+      <h2 class="text-3xl font-black text-slate-900">
+        Consulta lista
+      </h2>
+
+      <p class="text-slate-500 mt-3 text-lg">
+        Selecciona un criterio y realiza una búsqueda para visualizar resultados.
+      </p>
+
+    </div>
+
+    {% endif %}
+
   </div>
 
-  <div>
-    <label for="valor" class="block text-[var(--text)] font-medium mb-2">Valor</label>
-    <input type="text" id="valor" name="valor"
-      class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-      placeholder="Ej: arroz, crítico o alimentos" required>
-  </div>
-
-  <div class="flex items-end">
-    <button type="submit"
-      class="flex items-center gap-2 bg-[var(--primary)] text-white font-semibold py-2 px-4 rounded-lg hover:bg-[var(--accent)] transition">
-      <i data-lucide="search" class="w-5 h-5"></i>
-      Buscar
-    </button>
-  </div>
-</form>
-
-{% if productos is not none %}
-<div class="overflow-x-auto">
-  <table class="min-w-full bg-white border border-[var(--soft)] rounded-xl overflow-hidden shadow-md text-sm">
-    <thead class="bg-[var(--primary)] text-white">
-      <tr>
-        <th class="py-3 px-4 text-left">ID</th>
-        <th class="py-3 px-4 text-left">Nombre</th>
-        <th class="py-3 px-4 text-left">Categoría</th> 
-        <th class="py-3 px-4 text-left">Stock Actual</th>
-        <th class="py-3 px-4 text-left">Stock Óptimo</th>
-        <th class="py-3 px-4 text-left">Stock Máximo</th>
-        <th class="py-3 px-4 text-left">Estado</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-[var(--soft)] bg-[var(--bg)]">
-      {% for p in productos %}
-      <tr class="hover:bg-white transition">
-        <td class="py-3 px-4">{{ p.id }}</td>
-        <td class="py-3 px-4">{{ p.nombre }}</td>
-        <td class="py-3 px-4">{{ p.categoria }}</td> 
-        <td class="py-3 px-4">{{ p.stock_actual }}</td>
-        <td class="py-3 px-4">{{ p.stock_optimo }}</td>
-        <td class="py-3 px-4">{{ p.stock_maximo }}</td>
-        <td class="py-3 px-4">
-          <span class="inline-block px-2 py-1 text-xs rounded-full
-            {% if p.estado == 'Crítico' %}bg-red-100 text-red-700
-            {% elif p.estado == 'Regular' %}bg-yellow-100 text-yellow-700
-            {% elif p.estado == 'Óptimo' %}bg-green-100 text-green-700
-            {% elif p.estado == 'Exceso' %}bg-blue-100 text-blue-700
-            {% else %}bg-gray-100 text-gray-700{% endif %}">
-            {{ p.estado }}
-          </span>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="7" class="text-center py-6 text-gray-500">No hay productos que mostrar</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
 </div>
-{% endif %}
+
+<!-- MODAL -->
+<div id="modalFotoMaterial"
+     class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
+
+  <div class="relative bg-white rounded-[32px] p-6 shadow-2xl w-auto max-w-[95vw]">
+
+    <button onclick="cerrarFotoMaterial()"
+            class="absolute top-4 right-4 w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 text-white text-2xl font-black transition">
+      ×
+    </button>
+
+    <h2 id="tituloFotoMaterial"
+        class="text-3xl font-black text-slate-900 text-center mb-6">
+    </h2>
+
+    <div class="flex items-center justify-center">
+
+      <img id="imagenMaterial"
+           src=""
+           class="max-w-[90vw] max-h-[82vh] object-contain rounded-3xl shadow-2xl">
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+function abrirFotoMaterial(nombre, imagenUrl) {
+
+    document.getElementById('tituloFotoMaterial').innerText = nombre;
+
+    document.getElementById('imagenMaterial').src = imagenUrl;
+
+    document.getElementById('modalFotoMaterial').classList.remove('hidden');
+}
+
+function cerrarFotoMaterial() {
+
+    document.getElementById('modalFotoMaterial').classList.add('hidden');
+}
+
+/* SELECT DINÁMICO */
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const criterio = document.getElementById('criterio');
+    const valor = document.getElementById('valor');
+
+    criterio.addEventListener('change', function () {
+
+        valor.value = '';
+
+        if (this.value === 'nombre') {
+
+            valor.setAttribute('list', 'lista_nombres');
+            valor.placeholder = 'Selecciona o escribe un material...';
+
+        } else if (this.value === 'categoria') {
+
+            valor.setAttribute('list', 'lista_categorias');
+            valor.placeholder = 'Selecciona o escribe una categoría...';
+
+        } else if (this.value === 'estado') {
+
+            valor.setAttribute('list', 'lista_estados');
+            valor.placeholder = 'Crítico, Regular, Óptimo o Exceso...';
+        }
+
+    });
+
+});
+
+</script>
+
 {% endblock %}

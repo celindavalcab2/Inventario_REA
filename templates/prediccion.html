@@ -1,60 +1,455 @@
-{% extends "base.html" %}
-
-{% block title %}Predicción de Consumo{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Predicción{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto bg-white shadow-md rounded-2xl p-8">
-    <h2 class="text-3xl font-semibold text-gray-800 mb-6">
-        Predicción de Consumo de Todos los Productos
-    </h2>
 
-    <!-- 📊 Gráfico general -->
-    {% if grafico_general %}
-    <div class="mb-10">
-        <h3 class="text-xl font-bold text-[var(--primary)] mb-4">📊 Comparación General</h3>
-        <img src="data:image/png;base64,{{ grafico_general }}" alt="Gráfico general" class="w-full rounded-xl border shadow">
+<style>
+  .card-material {
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s;
+  }
+  .card-material:hover {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-comprar  { background:#fee2e2; color:#b91c1c; }
+  .badge-mantener { background:#d1fae5; color:#065f46; }
+  .badge-datos    { background:#fef9c3; color:#854d0e; }
+
+  .bar-track {
+    width: 100%;
+    height: 10px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+  }
+  .bar-fill-blue    { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+  .bar-fill-emerald { background: linear-gradient(90deg, #10b981, #34d399); }
+  .bar-fill-red     { background: linear-gradient(90deg, #ef4444, #f97316); }
+
+  .stat-box {
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1;
+  }
+
+  .decision-box {
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-top: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .decision-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .decision-comprar  { background:#fff1f2; border:1px solid #fecaca; }
+  .decision-mantener { background:#f0fdf4; border:1px solid #bbf7d0; }
+  .decision-datos    { background:#fefce8; border:1px solid #fde68a; }
+
+  .resumen-top {
+    background: #0f172a;
+    border-radius: 20px;
+    padding: 28px 32px;
+    color: white;
+  }
+  .leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .leyenda-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  #buscarPrediccion {
+    width: 100%;
+    padding: 14px 20px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+    background: white;
+  }
+  #buscarPrediccion:focus { border-color: #10b981; }
+
+  .tab-btn {
+    padding: 8px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.15s;
+  }
+  .tab-btn.activo {
+    background: #0f172a;
+    color: white;
+  }
+  .tab-btn:hover:not(.activo) { background: #f1f5f9; }
+</style>
+
+<div class="min-h-screen bg-slate-50 px-6 py-8">
+  <div class="max-w-7xl mx-auto space-y-7">
+
+    <!-- ENCABEZADO -->
+    <div>
+      <h1 class="text-4xl font-black text-slate-900">Panel de Decisión de Stock</h1>
+      <p class="text-slate-500 mt-2">
+        Análisis automático de demanda para saber qué comprar, qué mantener y qué necesita más historial.
+      </p>
     </div>
-    {% endif %}
 
-    <!-- 🔎 Predicciones individuales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {% for r in resultados %}
-        <div class="bg-[var(--bg)] border border-gray-200 p-6 rounded-xl shadow">
-            <h3 class="text-xl font-bold text-[var(--primary)] mb-3">{{ r.producto.nombre }}</h3>
-            <p><strong>📦 Stock actual:</strong> {{ r.producto.stock_actual }}</p>
-            <p><strong>📈 Predicción:</strong>
-                {% if r.prediccion is not none %}
-                    {{ r.prediccion | round(2) }} unidades
-                {% else %}
-                    <span class="text-gray-500 italic">No hay datos suficientes</span>
-                {% endif %}
-            </p>
-            <p><strong>🧠 Recomendación:</strong>
-                {% if r.prediccion is not none %}
-                    {% if r.prediccion > r.producto.stock_actual %}
-                        ⚠️ Reabastecer
-                    {% else %}
-                        ✅ Stock suficiente
-                    {% endif %}
-                {% else %}
-                    <span class="text-gray-400">N/A</span>
-                {% endif %}
-            </p>
+    {% set con_pred    = resultados|selectattr('prediccion')|list %}
+    {% set sin_pred    = resultados|rejectattr('prediccion')|list %}
+    {% set a_comprar   = [] %}
+    {% set a_mantener  = [] %}
+    {% for r in con_pred %}
+      {% if r.prediccion|float > r.material.stock_actual|float %}
+        {% set _ = a_comprar.append(r) %}
+      {% else %}
+        {% set _ = a_mantener.append(r) %}
+      {% endif %}
+    {% endfor %}
 
-            {% if r.grafico %}
-            <div class="mt-4">
-                <img src="data:image/png;base64,{{ r.grafico }}" alt="Gráfico de predicción" class="rounded-xl border border-gray-200 shadow-sm">
-            </div>
-            {% endif %}
+    <!-- TARJETAS RESUMEN -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+      <div style="background:white; border-radius:16px; border:1px solid #e2e8f0; padding:20px;">
+        <p class="stat-label">Total evaluados</p>
+        <p class="stat-value">{{ resultados|length }}</p>
+      </div>
+
+      <div style="background:#fff1f2; border-radius:16px; border:1px solid #fecaca; padding:20px;">
+        <p style="font-size:11px; font-weight:700; color:#ef4444; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">
+          Comprar urgente
+        </p>
+        <p style="font-size:26px; font-weight:900; color:#b91c1c; line-height:1;">{{ a_comprar|length }}</p>
+      </div>
+
+      <div style="background:#f0fdf4; border-radius:16px; border:1px solid #bbf7d0; padding:20px;">
+        <p style="font-size:11px; font-weight:700; color:#10b981; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">
+          Stock suficiente
+        </p>
+        <p style="font-size:26px; font-weight:900; color:#065f46; line-height:1;">{{ a_mantener|length }}</p>
+      </div>
+
+      <div style="background:#fefce8; border-radius:16px; border:1px solid #fde68a; padding:20px;">
+        <p style="font-size:11px; font-weight:700; color:#ca8a04; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">
+          Sin datos suficientes
+        </p>
+        <p style="font-size:26px; font-weight:900; color:#854d0e; line-height:1;">{{ sin_pred|length }}</p>
+      </div>
+
+    </div>
+
+    <!-- BARRA VISUAL GLOBAL -->
+    <div class="resumen-top">
+      <p style="font-size:13px; font-weight:700; color:#94a3b8; margin-bottom:16px; text-transform:uppercase; letter-spacing:.05em;">
+        Distribución del inventario
+      </p>
+
+      {% if resultados|length > 0 %}
+      {% set pct_comprar  = (a_comprar|length  / resultados|length * 100)|round(0)|int %}
+      {% set pct_mantener = (a_mantener|length / resultados|length * 100)|round(0)|int %}
+      {% set pct_datos    = (sin_pred|length   / resultados|length * 100)|round(0)|int %}
+      {% else %}
+      {% set pct_comprar = 0 %}{% set pct_mantener = 0 %}{% set pct_datos = 0 %}
+      {% endif %}
+
+      <!-- Barra segmentada -->
+      <div style="display:flex; height:16px; border-radius:999px; overflow:hidden; margin-bottom:16px;">
+        {% if pct_comprar > 0 %}
+        <div style="width:{{ pct_comprar }}%; background:#ef4444; transition:width 1s;"></div>
+        {% endif %}
+        {% if pct_mantener > 0 %}
+        <div style="width:{{ pct_mantener }}%; background:#10b981; transition:width 1s;"></div>
+        {% endif %}
+        {% if pct_datos > 0 %}
+        <div style="width:{{ pct_datos }}%; background:#f59e0b; transition:width 1s;"></div>
+        {% endif %}
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:20px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#ef4444;flex-shrink:0;"></div>
+          <span style="font-size:13px; color:#cbd5e1;">Comprar <b style="color:white;">{{ pct_comprar }}%</b></span>
         </div>
-        {% endfor %}
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#10b981;flex-shrink:0;"></div>
+          <span style="font-size:13px; color:#cbd5e1;">Mantener <b style="color:white;">{{ pct_mantener }}%</b></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></div>
+          <span style="font-size:13px; color:#cbd5e1;">Sin datos <b style="color:white;">{{ pct_datos }}%</b></span>
+        </div>
+      </div>
     </div>
 
-    <div class="mt-8 text-center">
-        <a href="{{ url_for('productos') }}"
-           class="inline-block bg-[var(--primary)] hover:bg-[var(--accent)] text-white font-semibold px-6 py-2 rounded-xl shadow transition-all">
-           ← Volver a Productos
-        </a>
+    <!-- BUSCADOR + FILTROS -->
+    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+      <div style="flex:1; min-width:220px;">
+        <input type="text" id="buscarPrediccion" placeholder="🔍  Buscar material...">
+      </div>
+      <div style="display:flex; gap:6px; background:white; border:1px solid #e2e8f0; border-radius:12px; padding:4px;">
+        <button class="tab-btn activo" onclick="filtrar('todos', this)">Todos</button>
+        <button class="tab-btn" onclick="filtrar('comprar', this)" style="color:#b91c1c;">Comprar</button>
+        <button class="tab-btn" onclick="filtrar('mantener', this)" style="color:#065f46;">Mantener</button>
+        <button class="tab-btn" onclick="filtrar('datos', this)" style="color:#854d0e;">Sin datos</button>
+      </div>
     </div>
+
+    <!-- GRID DE TARJETAS -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-5" id="gridMateriales">
+
+      {% for r in resultados %}
+      {% set stock  = r.material.stock_actual|float %}
+      {% set optimo = r.material.stock_optimo|float %}
+      {% set pred   = r.prediccion|float if r.prediccion else 0 %}
+      {% set maximo = r.material.stock_maximo|float %}
+
+      {% if r.prediccion %}
+        {% if pred > stock %}
+          {% set tipo = 'comprar' %}
+          {% set faltante = (pred - stock)|round(0)|int %}
+        {% else %}
+          {% set tipo = 'mantener' %}
+          {% set faltante = 0 %}
+        {% endif %}
+      {% else %}
+        {% set tipo = 'datos' %}
+        {% set faltante = 0 %}
+      {% endif %}
+
+      <!-- Porcentaje barra stock vs óptimo -->
+      {% if optimo > 0 %}
+        {% set pct_stock = [((stock / optimo) * 100)|round(0)|int, 100]|min %}
+      {% else %}
+        {% set pct_stock = 0 %}
+      {% endif %}
+
+      <!-- Porcentaje barra demanda vs stock -->
+      {% if r.prediccion and stock > 0 %}
+        {% set pct_pred = [((pred / stock) * 100)|round(0)|int, 100]|min %}
+      {% else %}
+        {% set pct_pred = 0 %}
+      {% endif %}
+
+      <div class="card-material fila-prediccion"
+           data-texto="{{ r.material.nombre }} {{ r.material.categoria }}"
+           data-tipo="{{ tipo }}">
+
+        <!-- CABECERA -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;">
+          <div>
+            <h2 style="font-size:20px; font-weight:900; color:#0f172a; margin:0 0 4px;">
+              {{ r.material.nombre }}
+            </h2>
+            <p style="font-size:13px; color:#94a3b8; margin:0;">{{ r.material.categoria }}</p>
+          </div>
+
+          {% if tipo == 'comprar' %}
+            <span class="badge badge-comprar">⚠ Comprar</span>
+          {% elif tipo == 'mantener' %}
+            <span class="badge badge-mantener">✓ Mantener</span>
+          {% else %}
+            <span class="badge badge-datos">? Sin datos</span>
+          {% endif %}
+        </div>
+
+        <!-- MÉTRICAS -->
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px;">
+
+          <div class="stat-box">
+            <p class="stat-label">Stock actual</p>
+            <p class="stat-value" style="color:{% if stock < optimo * 0.5 %}#dc2626{% elif stock < optimo %}#d97706{% else %}#0f172a{% endif %};">
+              {{ r.material.stock_actual }}
+            </p>
+          </div>
+
+          <div class="stat-box" style="background:{% if r.prediccion %}#eff6ff{% else %}#fefce8{% endif %};">
+            <p class="stat-label" style="color:{% if r.prediccion %}#3b82f6{% else %}#ca8a04{% endif %};">
+              Demanda est.
+            </p>
+            {% if r.prediccion %}
+              <p class="stat-value" style="color:#1d4ed8;">{{ r.prediccion|round(0)|int }}</p>
+            {% else %}
+              <p style="font-size:14px; font-weight:800; color:#ca8a04; margin:4px 0 0;">No calculada</p>
+            {% endif %}
+          </div>
+
+          <div class="stat-box">
+            <p class="stat-label">Stock óptimo</p>
+            <p class="stat-value">{{ r.material.stock_optimo }}</p>
+          </div>
+
+        </div>
+
+        <!-- BARRAS VISUALES -->
+        <div style="margin-bottom:16px;">
+
+          <!-- Barra stock vs óptimo -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-size:12px; font-weight:700; color:#64748b;">Stock actual vs óptimo</span>
+            <span style="font-size:12px; font-weight:700; color:#64748b;">{{ pct_stock }}%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill {% if pct_stock < 50 %}bar-fill-red{% elif pct_stock < 100 %}bar-fill-blue{% else %}bar-fill-emerald{% endif %}"
+                 style="width:{{ pct_stock }}%;">
+            </div>
+          </div>
+
+          {% if r.prediccion %}
+          <!-- Barra demanda vs stock -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; margin-top:10px;">
+            <span style="font-size:12px; font-weight:700; color:#64748b;">Demanda estimada vs stock</span>
+            <span style="font-size:12px; font-weight:700; color:#64748b;">{{ pct_pred }}%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill {% if pct_pred > 100 %}bar-fill-red{% else %}bar-fill-blue{% endif %}"
+                 style="width:{{ [pct_pred, 100]|min }}%;">
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+
+        <!-- DECISIÓN -->
+        {% if tipo == 'comprar' %}
+        <div class="decision-box decision-comprar">
+          <span class="decision-icon">🛒</span>
+          <div>
+            <p style="font-weight:900; color:#b91c1c; font-size:14px; margin:0 0 4px;">
+              Comprar ahora — faltan {{ faltante }} unidades
+            </p>
+            <p style="font-size:13px; color:#dc2626; margin:0;">
+              La demanda estimada supera el stock disponible. Se recomienda reabastecer pronto.
+            </p>
+          </div>
+        </div>
+
+        {% elif tipo == 'mantener' %}
+        <div class="decision-box decision-mantener">
+          <span class="decision-icon">✅</span>
+          <div>
+            <p style="font-weight:900; color:#065f46; font-size:14px; margin:0 0 4px;">
+              Stock suficiente — no comprar por ahora
+            </p>
+            <p style="font-size:13px; color:#047857; margin:0;">
+              El stock actual cubre la demanda estimada. Monitorea en las próximas semanas.
+            </p>
+          </div>
+        </div>
+
+        {% else %}
+        <div class="decision-box decision-datos">
+          <span class="decision-icon">📊</span>
+          <div>
+            <p style="font-weight:900; color:#854d0e; font-size:14px; margin:0 0 4px;">
+              Registrar más salidas para calcular
+            </p>
+            <p style="font-size:13px; color:#92400e; margin:0;">
+              Este material necesita al menos 2 salidas en el historial para generar una predicción.
+            </p>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+
+    </div>
+
+    <p id="sinResultados"
+       style="display:none; text-align:center; color:#94a3b8; font-weight:700; padding:40px 0;">
+      No se encontraron materiales con ese criterio.
+    </p>
+
+  </div>
 </div>
+
+<script>
+var filtroActual = 'todos';
+
+/* ── Buscador ── */
+document.getElementById('buscarPrediccion').addEventListener('input', function() {
+  aplicarFiltros();
+});
+
+/* ── Filtros por tab ── */
+function filtrar(tipo, btn) {
+  filtroActual = tipo;
+  document.querySelectorAll('.tab-btn').forEach(function(b) {
+    b.classList.remove('activo');
+  });
+  btn.classList.add('activo');
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  var texto   = document.getElementById('buscarPrediccion').value.toLowerCase().trim();
+  var tarjetas = document.querySelectorAll('.fila-prediccion');
+  var visibles = 0;
+
+  tarjetas.forEach(function(card) {
+    var contenido = card.getAttribute('data-texto').toLowerCase();
+    var tipo      = card.getAttribute('data-tipo');
+
+    var coincideTexto  = contenido.indexOf(texto) !== -1;
+    var coincideFiltro = (filtroActual === 'todos') || (tipo === filtroActual);
+
+    if (coincideTexto && coincideFiltro) {
+      card.style.display = '';
+      visibles++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  document.getElementById('sinResultados').style.display = visibles === 0 ? 'block' : 'none';
+}
+</script>
+
 {% endblock %}

@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% block title %}Mi Perfil{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-10">
+  <div class="max-w-4xl mx-auto">
+
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Mi Perfil</h1>
+        <p class="text-slate-500 mt-1">Información de tu cuenta en el sistema.</p>
+      </div>
+      <a href="{{ url_for('cambiar_contrasena') }}"
+         style="display:inline-flex; align-items:center; gap:8px; padding:12px 20px;
+                background:#0f3d2e; color:white; border-radius:14px; font-weight:700;
+                font-size:14px; text-decoration:none;">
+        🔑 Cambiar contraseña
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- TARJETA AVATAR -->
+      <div style="background:white; border-radius:24px; padding:32px; border:1px solid #e2e8f0;
+                  box-shadow:0 2px 12px rgba(0,0,0,0.06); text-align:center; height:fit-content;">
+
+        <!-- Foto de perfil con botón de cambio -->
+        <div style="position:relative; width:96px; margin:0 auto 16px;">
+
+          <!-- Imagen o inicial -->
+          {% if usuario.foto_perfil %}
+            <img id="avatarImg"
+                 src="{{ url_for('static', filename='img_perfiles/' ~ usuario.foto_perfil) }}"
+                 style="width:96px; height:96px; border-radius:50%; object-fit:cover;
+                        border:3px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+          {% else %}
+            <div id="avatarInicial"
+                 style="width:96px; height:96px; border-radius:50%;
+                        background:linear-gradient(135deg,#0f3d2e,#14532d);
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:40px; font-weight:900; color:white;">
+              {{ usuario.nombres[0]|upper }}
+            </div>
+            <img id="avatarImg"
+                 src=""
+                 style="width:96px; height:96px; border-radius:50%; object-fit:cover;
+                        border:3px solid #e2e8f0; display:none; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+          {% endif %}
+
+          <!-- Botón cámara encima -->
+          <label for="inputFotoPerfil"
+                 title="Cambiar foto"
+                 style="position:absolute; bottom:0; right:0;
+                        width:30px; height:30px; border-radius:50%;
+                        background:#0f3d2e; color:white;
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:14px; cursor:pointer; border:2px solid white;
+                        box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+            📷
+          </label>
+          <input type="file" id="inputFotoPerfil" accept="image/png,image/jpeg,image/webp"
+                 style="display:none;" onchange="previsualizarFoto(event)">
+        </div>
+
+        <!-- Nombre -->
+        <h2 style="font-size:20px; font-weight:900; color:#0f172a; margin:0 0 4px;">
+          {{ usuario.nombres }} {{ usuario.apellidos }}
+        </h2>
+        <p style="font-size:14px; color:#64748b; margin:0 0 16px;">@{{ usuario.username }}</p>
+
+        <!-- Badge rol -->
+        {% if usuario.rol == 'administrador' %}
+          <span style="background:#dcfce7; color:#15803d; padding:6px 16px;
+                       border-radius:999px; font-size:12px; font-weight:700;">
+            👑 Administrador
+          </span>
+        {% else %}
+          <span style="background:#dbeafe; color:#1d4ed8; padding:6px 16px;
+                       border-radius:999px; font-size:12px; font-weight:700;">
+            👤 Usuario
+          </span>
+        {% endif %}
+
+        <!-- Badge permiso -->
+        <div style="margin-top:20px; padding-top:20px; border-top:1px solid #f1f5f9;">
+          <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 6px;
+                    text-transform:uppercase; letter-spacing:.05em;">Permiso</p>
+          {% if usuario.permiso == 'completo' %}
+            <span style="background:#fef9c3; color:#854d0e; padding:4px 12px;
+                         border-radius:999px; font-size:12px; font-weight:700;">⚡ Completo</span>
+          {% elif usuario.permiso == 'editor' %}
+            <span style="background:#ede9fe; color:#6d28d9; padding:4px 12px;
+                         border-radius:999px; font-size:12px; font-weight:700;">✏️ Editor</span>
+          {% else %}
+            <span style="background:#f1f5f9; color:#64748b; padding:4px 12px;
+                         border-radius:999px; font-size:12px; font-weight:700;">👁️ Espectador</span>
+          {% endif %}
+        </div>
+
+        <!-- Formulario subir foto (se muestra al seleccionar) -->
+        <form id="formFoto" method="POST"
+              action="{{ url_for('subir_foto_perfil') }}"
+              enctype="multipart/form-data"
+              style="margin-top:16px; display:none;">
+          <input type="file" name="foto_perfil" id="inputFotoForm"
+                 accept="image/png,image/jpeg,image/webp" style="display:none;">
+
+          <!-- Banner confirmación -->
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;
+                      padding:10px 14px; margin-bottom:12px; font-size:13px; color:#15803d; font-weight:700;">
+            ✅ Foto lista — guarda para aplicarla
+          </div>
+
+          <button type="submit"
+                  style="width:100%; padding:10px; background:#0f3d2e; color:white;
+                         border:none; border-radius:12px; font-weight:900; font-size:14px; cursor:pointer;">
+            Guardar foto
+          </button>
+          <button type="button" onclick="cancelarFoto()"
+                  style="width:100%; padding:8px; background:#f1f5f9; color:#475569;
+                         border:none; border-radius:12px; font-weight:700; font-size:13px;
+                         cursor:pointer; margin-top:6px;">
+            Cancelar
+          </button>
+        </form>
+
+      </div>
+
+      <!-- DATOS DEL PERFIL -->
+      <div class="lg:col-span-2" style="display:flex; flex-direction:column; gap:16px;">
+
+        <!-- Información personal -->
+        <div style="background:white; border-radius:24px; padding:28px; border:1px solid #e2e8f0;
+                    box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+          <h3 style="font-size:16px; font-weight:900; color:#0f172a; margin:0 0 20px;
+                     padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+            📋 Información personal
+          </h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+            <div style="background:#f8fafc; border-radius:14px; padding:16px;">
+              <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 4px; text-transform:uppercase; letter-spacing:.05em;">Nombres</p>
+              <p style="font-size:16px; font-weight:800; color:#0f172a; margin:0;">{{ usuario.nombres }}</p>
+            </div>
+
+            <div style="background:#f8fafc; border-radius:14px; padding:16px;">
+              <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 4px; text-transform:uppercase; letter-spacing:.05em;">Apellidos</p>
+              <p style="font-size:16px; font-weight:800; color:#0f172a; margin:0;">{{ usuario.apellidos }}</p>
+            </div>
+
+            <div style="background:#f8fafc; border-radius:14px; padding:16px;">
+              <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 4px; text-transform:uppercase; letter-spacing:.05em;">DNI</p>
+              <p style="font-size:16px; font-weight:800; color:#0f172a; margin:0;">{{ usuario.dni or '—' }}</p>
+            </div>
+
+            <div style="background:#f8fafc; border-radius:14px; padding:16px;">
+              <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 4px; text-transform:uppercase; letter-spacing:.05em;">Usuario</p>
+              <p style="font-size:16px; font-weight:800; color:#0f172a; margin:0;">@{{ usuario.username }}</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Configuración de cuenta -->
+        <div style="background:white; border-radius:24px; padding:28px; border:1px solid #e2e8f0;
+                    box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+          <h3 style="font-size:16px; font-weight:900; color:#0f172a; margin:0 0 20px;
+                     padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+            ⚙️ Configuración de cuenta
+          </h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+            <div style="background:#f8fafc; border-radius:14px; padding:16px;">
+              <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 4px; text-transform:uppercase; letter-spacing:.05em;">Rol</p>
+              <p style="font-size:16px; font-weight:800; color:#0f172a; margin:0; text-transform:capitalize;">{{ usuario.rol }}</p>
+            </div>
+
+            <div style="background:#f8fafc; border-radius:14px; padding:16px;">
+              <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 4px; text-transform:uppercase; letter-spacing:.05em;">Nivel de acceso</p>
+              <p style="font-size:16px; font-weight:800; color:#0f172a; margin:0; text-transform:capitalize;">{{ usuario.permiso or '—' }}</p>
+            </div>
+
+            <div style="background:#f8fafc; border-radius:14px; padding:16px; grid-column:span 2;">
+              <p style="font-size:11px; font-weight:700; color:#94a3b8; margin:0 0 4px; text-transform:uppercase; letter-spacing:.05em;">Última actividad</p>
+              <p style="font-size:16px; font-weight:800; color:#0f172a; margin:0;">
+                {% if usuario.ultima_actividad %}{{ usuario.ultima_actividad }}{% else %}Sin registros{% endif %}
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Seguridad -->
+        <div style="background:linear-gradient(135deg,#0f3d2e,#14532d); border-radius:24px;
+                    padding:24px 28px; color:white; display:flex; align-items:center;
+                    justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <p style="font-size:16px; font-weight:900; margin:0 0 4px;">🔒 Seguridad de contraseña</p>
+            <p style="font-size:13px; color:#6ee7b7; margin:0;">Cambia tu contraseña periódicamente para mantener tu cuenta segura.</p>
+          </div>
+          <a href="{{ url_for('cambiar_contrasena') }}"
+             style="background:white; color:#0f3d2e; padding:10px 20px; border-radius:12px;
+                    font-weight:900; font-size:14px; text-decoration:none; white-space:nowrap;">
+            Cambiar ahora
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var fotoOriginal = null;
+
+function previsualizarFoto(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    /* Mostrar preview */
+    var img      = document.getElementById('avatarImg');
+    var inicial  = document.getElementById('avatarInicial');
+    var formFoto = document.getElementById('formFoto');
+    var inputForm = document.getElementById('inputFotoForm');
+
+    img.src = e.target.result;
+    img.style.display = 'block';
+    if (inicial) inicial.style.display = 'none';
+
+    /* Pasar el archivo al input del form */
+    var dt = new DataTransfer();
+    dt.items.add(file);
+    inputForm.files = dt.files;
+
+    /* Mostrar botones de guardar/cancelar */
+    formFoto.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function cancelarFoto() {
+  var img      = document.getElementById('avatarImg');
+  var inicial  = document.getElementById('avatarInicial');
+  var formFoto = document.getElementById('formFoto');
+
+  /* Restaurar foto original o inicial */
+  {% if usuario.foto_perfil %}
+    img.src = "{{ url_for('static', filename='img_perfiles/' ~ usuario.foto_perfil) }}";
+    img.style.display = 'block';
+  {% else %}
+    img.style.display = 'none';
+    if (inicial) inicial.style.display = 'flex';
+  {% endif %}
+
+  formFoto.style.display = 'none';
+  document.getElementById('inputFotoPerfil').value = '';
+}
+</script>
+
+{% endblock %}

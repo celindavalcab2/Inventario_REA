@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% block title %}Editar Material{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 px-6 py-10">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Editar Material</h1>
+        <p class="text-slate-500 mt-1">Modifica datos, stock e imagen del material seleccionado.</p>
+      </div>
+      <a href="{{ url_for('materiales') }}"
+         class="px-5 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 shadow-sm">
+        Volver
+      </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="formEditarMaterial"
+          class="grid grid-cols-1 lg:grid-cols-[2fr_360px] gap-8 items-start">
+
+      <!-- ===================== COLUMNA IZQUIERDA ===================== -->
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-16 h-16 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-3xl">✏️</div>
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">Información actual</h2>
+            <p class="text-slate-500">Edita solo los datos necesarios del material.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-5">
+
+          <!-- Nombre -->
+          <div>
+            <label class="text-sm font-bold text-slate-700">Nombre del material</label>
+            <input type="text" name="nombre" value="{{ material.nombre }}" required
+                   class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-700">
+          </div>
+
+          <!-- Categoría -->
+          <div>
+            <label class="text-sm font-bold text-slate-700">Categoría</label>
+            <select name="categoria" required
+                    class="campo mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-blue-700">
+              {% set categorias = [
+                'Cemento y agregados',
+                'Fierro y acero',
+                'Ladrillos y bloques',
+                'Tuberías y conexiones',
+                'Material eléctrico',
+                'Pinturas y acabados',
+                'Herramientas y equipos',
+                'Seguridad industrial'
+              ] %}
+              {% for c in categorias %}
+                <option value="{{ c }}" {% if material.categoria == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- ================== IMAGEN (MEJORADA) ================== -->
+          <div>
+            <label class="text-sm font-bold text-slate-700">Imagen del material</label>
+
+            <!-- Zona dropzone -->
+            <div id="zonaDropzone"
+                 class="mt-2 border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center
+                        hover:border-blue-600 transition-all duration-300 bg-slate-50 relative"
+                 onclick="document.getElementById('foto_material').click()"
+                 style="cursor:pointer;">
+
+              <!-- Input oculto -->
+              <input type="file" name="foto_material" id="foto_material"
+                     accept="image/png,image/jpeg,image/webp"
+                     class="hidden"
+                     onchange="previewImagen(event)">
+
+              <!-- Badge "NUEVA" (aparece al cargar imagen) -->
+              <span id="badgeNueva"
+                    class="hidden absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-black
+                           px-3 py-1 rounded-full shadow-md z-10 tracking-wide">
+                ✓ NUEVA
+              </span>
+
+              <!-- Preview de imagen -->
+              {% if material.foto %}
+                <img id="previewImagen"
+                     src="{{ url_for('static', filename='img_materiales/' ~ material.foto) }}"
+                     class="mt-2 rounded-2xl shadow-md max-h-52 mx-auto object-cover transition-all duration-300">
+                <div id="iconoSubida" class="hidden text-4xl mt-2">📷</div>
+                <p id="labelSubida" class="text-slate-700 font-black mt-3">Cambiar imagen</p>
+              {% else %}
+                <img id="previewImagen"
+                     class="hidden mt-2 rounded-2xl shadow-md max-h-52 mx-auto object-cover transition-all duration-300">
+                <div id="iconoSubida" class="text-4xl mt-2">📷</div>
+                <p id="labelSubida" class="text-slate-700 font-black mt-3">Subir imagen del material</p>
+              {% endif %}
+
+              <p class="text-xs text-slate-400 mt-1">PNG, JPG, JPEG o WEBP · Haz clic para seleccionar</p>
+
+            </div>
+            <!-- FIN zona dropzone -->
+
+            <!-- ✅ BANNER DE ÉXITO (oculto por defecto, aparece al cambiar imagen) -->
+            <div id="bannerExito"
+                 class="hidden mt-4 items-center gap-3 bg-emerald-50 border border-emerald-200
+                        rounded-2xl px-4 py-3 animate-pulse-once">
+
+              <!-- Ícono check circular -->
+              <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center
+                          text-white text-xl flex-shrink-0 shadow-md">
+                ✓
+              </div>
+
+              <!-- Texto -->
+              <div class="text-left flex-1">
+                <p class="text-emerald-800 font-black text-sm">¡Imagen cambiada exitosamente!</p>
+                <p id="nombreArchivo" class="text-emerald-600 text-xs mt-0.5 truncate max-w-xs"></p>
+              </div>
+
+              <!-- Botón de cerrar -->
+              <button type="button"
+                      onclick="cerrarBanner()"
+                      class="text-emerald-400 hover:text-emerald-700 font-bold text-lg leading-none flex-shrink-0"
+                      title="Cerrar">✕</button>
+            </div>
+            <!-- FIN banner de éxito -->
+
+          </div>
+          <!-- FIN bloque imagen -->
+
+          <!-- ================== CONTROL DE STOCK ================== -->
+          <div class="mt-6">
+            <h3 class="text-xl font-black text-slate-800 mb-5">Control de stock</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Stock actual</label>
+                <input type="number" min="0" name="stock_actual" id="stock_actual"
+                       value="{{ material.stock_actual }}" required
+                       class="campo w-full px-4 py-4 rounded-2xl border border-slate-300 outline-none
+                              focus:ring-2 focus:ring-blue-700 text-center font-black text-lg">
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Stock óptimo</label>
+                <input type="number" min="1" name="stock_optimo" id="stock_optimo"
+                       value="{{ material.stock_optimo }}" required
+                       class="campo w-full px-4 py-4 rounded-2xl border border-slate-300 outline-none
+                              focus:ring-2 focus:ring-blue-700 text-center font-black text-lg">
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Stock máximo</label>
+                <input type="number" min="1" name="stock_maximo" id="stock_maximo"
+                       value="{{ material.stock_maximo }}" required
+                       class="campo w-full px-4 py-4 rounded-2xl border border-slate-300 outline-none
+                              focus:ring-2 focus:ring-blue-700 text-center font-black text-lg">
+              </div>
+            </div>
+
+            <div id="alertaStock" class="hidden mt-6 rounded-2xl p-5 border font-bold"></div>
+          </div>
+
+        </div>
+      </div>
+      <!-- FIN columna izquierda -->
+
+      <!-- ===================== COLUMNA DERECHA ===================== -->
+      <div class="bg-slate-900 text-white rounded-3xl shadow-xl p-8 h-fit sticky top-8">
+        <div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-2xl mb-5">
+          🧾
+        </div>
+
+        <h2 class="text-xl font-black mb-2">Resumen de edición</h2>
+        <p class="text-slate-300 text-sm mb-6">
+          Verifica los cambios antes de guardar. Si subes una nueva imagen, reemplazará la anterior.
+        </p>
+
+        <div class="space-y-4 text-sm">
+
+          <div class="bg-slate-800 rounded-2xl p-4">
+            <p class="text-slate-400">Estado estimado</p>
+            <p id="estadoTexto" class="font-black text-white">Calculando...</p>
+          </div>
+
+          <!-- Aviso imagen en panel lateral -->
+          <div id="avisoImagen"
+               class="hidden bg-emerald-100 text-emerald-800 rounded-2xl p-4 font-bold flex items-center gap-2">
+            <span class="text-lg">🖼️</span>
+            <span>Nueva imagen lista para guardar.</span>
+          </div>
+
+          <!-- Aviso cambios pendientes -->
+          <div id="avisoCambios"
+               class="hidden bg-yellow-100 text-yellow-800 rounded-2xl p-4 font-bold flex items-center gap-2">
+            <span class="text-lg">⚠️</span>
+            <span>Hay cambios pendientes por guardar.</span>
+          </div>
+
+          <!-- Contraseña -->
+          <div>
+            <label class="text-sm font-bold text-slate-300">Contraseña del usuario actual</label>
+            <input type="password" name="admin_password" required
+                   class="mt-2 w-full px-4 py-3 rounded-xl border border-slate-600 bg-slate-800
+                          text-white outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Confirma tu contraseña">
+          </div>
+        </div>
+
+        <button type="submit" id="btnGuardar"
+                class="mt-8 w-full bg-blue-600 text-white py-4 rounded-2xl font-black
+                       hover:bg-blue-700 shadow-lg transition-all duration-200">
+          Guardar cambios
+        </button>
+
+        <a href="{{ url_for('materiales') }}"
+           class="block text-center mt-4 text-slate-300 font-bold hover:text-white">
+          Cancelar
+        </a>
+      </div>
+      <!-- FIN columna derecha -->
+
+    </form>
+  </div>
+</div>
+
+<!-- ===================== ESTILOS ANIMACIÓN ===================== -->
+<style>
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  #bannerExito.visible {
+    animation: slideDown 0.4s cubic-bezier(0.22, 0.68, 0, 1.2) forwards;
+  }
+  #zonaDropzone.imagen-exitosa {
+    border-color: #10b981 !important;
+    border-style: solid !important;
+    background-color: #f0fdf4 !important;
+  }
+</style>
+
+<!-- ===================== SCRIPTS ===================== -->
+<script>
+const campos       = document.querySelectorAll('.campo');
+const avisoCambios = document.getElementById('avisoCambios');
+const avisoImagen  = document.getElementById('avisoImagen');
+const alertaStock  = document.getElementById('alertaStock');
+const estadoTexto  = document.getElementById('estadoTexto');
+const btnGuardar   = document.getElementById('btnGuardar');
+const stockActual  = document.getElementById('stock_actual');
+const stockOptimo  = document.getElementById('stock_optimo');
+const stockMaximo  = document.getElementById('stock_maximo');
+
+/* ── Función principal: preview + banner de éxito ── */
+function previewImagen(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    /* Elementos del dropzone */
+    const preview  = document.getElementById('previewImagen');
+    const icono    = document.getElementById('iconoSubida');
+    const labelSub = document.getElementById('labelSubida');
+    const zona     = document.getElementById('zonaDropzone');
+    const badge    = document.getElementById('badgeNueva');
+
+    /* Elementos del banner */
+    const banner   = document.getElementById('bannerExito');
+    const nombre   = document.getElementById('nombreArchivo');
+
+    /* 1. Mostrar imagen nueva en el dropzone */
+    preview.src = e.target.result;
+    preview.classList.remove('hidden');
+
+    /* 2. Ocultar ícono cámara y actualizar label */
+    icono.classList.add('hidden');
+    labelSub.textContent = 'Cambiar imagen';
+
+    /* 3. Poner borde verde en la zona */
+    zona.classList.add('imagen-exitosa');
+
+    /* 4. Mostrar badge "NUEVA" */
+    badge.classList.remove('hidden');
+
+    /* 5. Mostrar banner de éxito con animación */
+    nombre.textContent = file.name + ' (' + formatearBytes(file.size) + ')';
+    banner.classList.remove('hidden');
+    banner.classList.add('flex', 'visible');
+
+    /* 6. Avisos del panel lateral */
+    avisoImagen.classList.remove('hidden');
+    avisoCambios.classList.remove('hidden');
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/* Cierra el banner de éxito (botón ✕) */
+function cerrarBanner() {
+  const banner = document.getElementById('bannerExito');
+  banner.classList.add('hidden');
+  banner.classList.remove('flex', 'visible');
+}
+
+/* Formatea bytes a KB / MB para mostrar en el banner */
+function formatearBytes(bytes) {
+  if (bytes < 1024)       return bytes + ' B';
+  if (bytes < 1048576)    return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+/* ── Evaluación de stock ── */
+function evaluarStock() {
+  const actual = Number(stockActual.value);
+  const optimo = Number(stockOptimo.value);
+  const maximo = Number(stockMaximo.value);
+
+  alertaStock.className = 'hidden mt-6 rounded-2xl p-5 border font-bold';
+  btnGuardar.disabled = false;
+  btnGuardar.classList.remove('opacity-60', 'cursor-not-allowed');
+
+  if (optimo > maximo) {
+    alertaStock.innerText = 'Error: el stock óptimo no puede ser mayor que el stock máximo.';
+    alertaStock.className = 'mt-6 rounded-2xl p-5 border bg-red-50 border-red-100 text-red-700 font-bold';
+    estadoTexto.innerText = 'Datos inválidos';
+    estadoTexto.className = 'font-black text-red-400';
+    btnGuardar.disabled = true;
+    btnGuardar.classList.add('opacity-60', 'cursor-not-allowed');
+    return;
+  }
+
+  if (actual > maximo) {
+    alertaStock.innerText = 'Advertencia: el stock actual supera el máximo. Se registrará como exceso.';
+    alertaStock.className = 'mt-6 rounded-2xl p-5 border bg-blue-50 border-blue-100 text-blue-700 font-bold';
+    estadoTexto.innerText = 'Exceso';
+    estadoTexto.className = 'font-black text-blue-400';
+    return;
+  }
+
+  if (actual < optimo * 0.5) {
+    estadoTexto.innerText = 'Crítico';
+    estadoTexto.className = 'font-black text-red-400';
+  } else if (actual < optimo) {
+    estadoTexto.innerText = 'Regular';
+    estadoTexto.className = 'font-black text-yellow-400';
+  } else {
+    estadoTexto.innerText = 'Óptimo';
+    estadoTexto.className = 'font-black text-emerald-400';
+  }
+}
+
+/* ── Detectar cambios en cualquier campo ── */
+campos.forEach(campo => {
+  campo.addEventListener('input',  () => { avisoCambios.classList.remove('hidden'); evaluarStock(); });
+  campo.addEventListener('change', () => { avisoCambios.classList.remove('hidden'); evaluarStock(); });
+});
+
+/* ── Al enviar el formulario ── */
+document.getElementById('formEditarMaterial').addEventListener('submit', function() {
+  btnGuardar.innerText = 'Guardando...';
+  btnGuardar.disabled  = true;
+});
+
+/* ── Evaluar stock al cargar la página ── */
+evaluarStock();
+</script>
+{% endblock %}

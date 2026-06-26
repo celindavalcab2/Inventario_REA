@@ -51,7 +51,6 @@ requests==2.32.4
 requests-oauthlib==2.0.0
 rsa==4.9.1
 scikit-learn==1.7.0
-scipy==1.15.3
 six==1.17.0
 tensorboard==2.11.2
 tensorboard-data-server==0.6.1
